@@ -284,3 +284,89 @@ DailyJams helps with music discovery based on current mood, time of day, and ins
 - Community features (share your preferences/discoveries)
 - Advanced learning algorithms (ML-based recommendation engine)
 - Mobile app version
+## Planned Features (Priority Order)
+
+### High Priority - Next Sprint
+
+**"Only Discover New" Toggle**
+- Add checkbox/toggle: "Only suggest new bands (exclude previously rated)"
+- Filter out any bands user has upvoted or downvoted
+- Database query modification to exclude rated suggestions
+- UI placement: Below mood input or in settings
+
+**Skip Button for Feedback**
+- Add "Skip for Now" button alongside thumbs up/down
+- No database action - just allows user to move past without rating
+- Visual: Neutral color, perhaps "⏭️ Skip for Now"
+- Does not save to database (no feedback recorded)
+
+**Genre Selector**
+- Add genre selection in main form
+- Options: Jazz, Latin, Rock, Electronic, Hip-Hop, Classical, Blues, Country, R&B, Metal, Indie, Pop, etc.
+- Multi-select capability (checkboxes or tag system)
+- Integration into ChatGPT prompt
+- Optional: "Any Genre" default state
+
+### Medium Priority
+
+**Advanced Tempo Options**
+- Under "Advanced Options", add specific BPM range selector
+- Min BPM / Max BPM input fields
+- Overrides the general tempo slider when specified
+- Example: "Between 120-140 BPM"
+
+**Source Toggle UI**
+- User-facing interface to enable/disable music sources
+- Settings page or modal
+- Save preferences to database
+- Visual indication of which sources are active
+
+**User Profile Summary**
+- Dashboard showing:
+  - Total recommendations received
+  - Upvoted vs downvoted ratio
+  - Favorite genres discovered
+  - Most common mood selections
+  - Preferred instruments
+
+**Search History**
+- View past searches and their results
+- Re-run previous searches
+- Delete old searches
+- Filter by date, mood, or genre
+
+### Low Priority / Nice to Have
+
+**Export Recommendations**
+- Export liked bands to CSV/JSON
+- Share recommendations via link
+- Print-friendly format
+
+**Time-based Auto-suggestions**
+- Automatically detect time of day
+- Suggest moods based on time (morning = energetic, evening = relaxed)
+- User can override
+
+**Collaborative Filtering**
+- "Users who liked X also liked Y"
+- Requires multi-user system (future)
+
+**Instrumental-only Toggle**
+- Quick toggle for instrumental music only
+- Sets "vocals" to NO automatically
+
+---
+
+## Future Enhancements (Long-term Vision)
+
+- Integration with Spotify/Apple Music APIs
+- Direct playlist creation from recommendations
+- Social sharing of recommendations
+- Community features (share your preferences/discoveries)
+- Advanced learning algorithms (ML-based recommendation engine)
+- Mobile app version
+- User accounts and cloud sync
+- Band/artist images from API
+- Audio previews (30-second clips)
+- Decade/era selector (60s, 70s, 80s, etc.)
+- Subgenre refinement (e.g., "Jazz" → "Bebop, Smooth Jazz, Fusion")
