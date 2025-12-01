@@ -1,0 +1,217 @@
+import sqlite3
+import os
+from datetime import datetime
+
+# Database file path
+DB_PATH = os.path.join(os.path.dirname(__file__), '../data/dailyjams.db')
+
+def get_db_connection():
+    """Create a database connection to the SQLite database."""
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row  # This allows us to access columns by name
+    return conn
+
+def initialize_database():
+    """Create all necessary tables if they don't exist."""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    
+    # Table 1: Music Suggestions
+    # Stores each band/artist suggestion from ChatGPT
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS music_suggestions (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            band_name TEXT NOT NULL,
+            genre TEXT,
+            description TEXT,
+            match_reason TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    ''')
+    
+    # Table 2: User Preferences
+    # Stores the preferences used for each suggestion request
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS user_preferences (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            suggestion_id INTEGER,
+            time_of_day TEXT,
+            mood TEXT,
+            tempo INTEGER,
+            instruments_yes TEXT,
+            instruments_no TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (suggestion_id) REFERENCES music_suggestions (id)
+        )
+    ''')
+    
+    # Table 3: User Feedback
+    # Stores thumbs up/down feedback on suggestions
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS user_feedback (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            suggestion_id INTEGER NOT NULL,
+            feedback_type TEXT NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (suggestion_id) REFERENCES music_suggestions (id)
+        )
+    ''')
+    
+    # Table 4: Source Preferences
+    # Stores which sources are enabled/disabled
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS source_preferences (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            source_name TEXT NOT NULL UNIQUE,
+            source_url TEXT,
+            is_enabled INTEGER DEFAULT 1,
+            description TEXT
+        )
+    ''')
+    
+    conn.commit()
+    conn.close()
+    print("✅ Database initialized successfully!")
+
+def insert_default_sources():
+    """Insert default music discovery sources."""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    
+    default_sources = [
+        ('Reddit - r/ifyoulikeblank', 'https://www.reddit.com/r/ifyoulikeblank/', 1, 'Music recommendations based on similar artists'),
+        ('Reddit - r/Music', 'https://www.reddit.com/r/Music/', 1, 'General music discussions and discoveries'),
+        ('RateYourMusic', 'https://rateyourmusic.com/', 1, 'Comprehensive music database and ratings'),
+        ('AllMusic', 'https://www.allmusic.com/', 1, 'Professional music reviews and artist info'),
+        ('Pitchfork', 'https://pitchfork.com/', 1, 'Music reviews and features'),
+    ]
+    
+    for source in default_sources:
+        try:
+            cursor.execute('''
+                INSERT OR IGNORE INTO source_preferences (source_name, source_url, is_enabled, description)
+                VALUES (?, ?, ?, ?)
+            ''', source)
+        except sqlite3.IntegrityError:
+            pass  # Source already exists
+    
+    conn.commit()
+    conn.close()
+    print("✅ Default sources added!")
+
+# CRUD Functions for Music Suggestions
+
+def save_suggestion(band_name, genre=None, description=None, match_reason=None):
+    """Save a music suggestion to the database."""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    
+    cursor.execute('''
+        INSERT INTO music_suggestions (band_name, genre, description, match_reason)
+        VALUES (?, ?, ?, ?)
+    ''', (band_name, genre, description, match_reason))
+    
+    suggestion_id = cursor.lastrowid
+    conn.commit()
+    conn.close()
+    
+    return suggestion_id
+
+def save_user_preferences(suggestion_id, time_of_day, mood, tempo, instruments_yes, instruments_no):
+    """Save the user preferences that generated a suggestion."""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    
+    # Convert lists to comma-separated strings
+    instruments_yes_str = ','.join(instruments_yes) if instruments_yes else ''
+    instruments_no_str = ','.join(instruments_no) if instruments_no else ''
+    
+    cursor.execute('''
+        INSERT INTO user_preferences (suggestion_id, time_of_day, mood, tempo, instruments_yes, instruments_no)
+        VALUES (?, ?, ?, ?, ?, ?)
+    ''', (suggestion_id, time_of_day, mood, tempo, instruments_yes_str, instruments_no_str))
+    
+    conn.commit()
+    conn.close()
+
+def save_feedback(suggestion_id, feedback_type):
+    """Save user feedback (positive/negative) for a suggestion."""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    
+    cursor.execute('''
+        INSERT INTO user_feedback (suggestion_id, feedback_type)
+        VALUES (?, ?)
+    ''', (suggestion_id, feedback_type))
+    
+    conn.commit()
+    conn.close()
+
+def get_enabled_sources():
+    """Get all enabled music discovery sources."""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    
+    cursor.execute('''
+        SELECT source_name, source_url, description
+        FROM source_preferences
+        WHERE is_enabled = 1
+    ''')
+    
+    sources = cursor.fetchall()
+    conn.close()
+    
+    return [dict(source) for source in sources]
+
+def get_user_feedback_history():
+    """Get all feedback with associated preferences for learning."""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    
+    cursor.execute('''
+        SELECT 
+            ms.band_name,
+            up.mood,
+            up.tempo,
+            up.instruments_yes,
+            up.instruments_no,
+            uf.feedback_type,
+            uf.created_at
+        FROM user_feedback uf
+        JOIN music_suggestions ms ON uf.suggestion_id = ms.id
+        JOIN user_preferences up ON ms.id = up.suggestion_id
+        ORDER BY uf.created_at DESC
+    ''')
+    
+    history = cursor.fetchall()
+    conn.close()
+    
+    return [dict(row) for row in history]
+def get_recently_skipped_bands(days=5):
+    """Get bands that were skipped in the last X days."""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    
+    cursor.execute('''
+        SELECT DISTINCT ms.band_name
+        FROM user_feedback uf
+        JOIN music_suggestions ms ON uf.suggestion_id = ms.id
+        WHERE uf.feedback_type = 'skipped'
+        AND uf.created_at >= datetime('now', '-' || ? || ' days')
+    ''', (days,))
+    
+    skipped = cursor.fetchall()
+    conn.close()
+    
+    return [row['band_name'] for row in skipped]
+
+def get_excluded_bands():
+    """Get all bands to exclude from recommendations (recently skipped)."""
+    return get_recently_skipped_bands(days=5)
+# Test function
+if __name__ == '__main__':
+    print("Initializing database...")
+    initialize_database()
+    insert_default_sources()
+    print("\n✅ Database setup complete!")
+    print(f"Database location: {DB_PATH}")

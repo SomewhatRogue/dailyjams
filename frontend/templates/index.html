@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DailyJams - Music Discovery</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🎵 DailyJams</h1>
+            <p class="tagline">Discover music based on your vibe</p>
+        </header>
+
+        <main>
+            <form id="preferences-form">
+                <!-- Time of Day Section -->
+                <div class="form-section">
+                    <label class="section-label">Time of Day</label>
+                    <div class="button-group">
+                        <button type="button" class="btn-option" data-time="Morning">🌅 Morning</button>
+                        <button type="button" class="btn-option" data-time="Afternoon">☀️ Afternoon</button>
+                        <button type="button" class="btn-option" data-time="Evening">🌆 Evening</button>
+                        <button type="button" class="btn-option" data-time="Night">🌙 Night</button>
+                    </div>
+                    <input type="hidden" id="time-of-day" name="time_of_day" value="">
+                </div>
+
+                <!-- Mood Section -->
+                <div class="form-section">
+                    <label for="mood" class="section-label">What's your mood?</label>
+                    <input type="text" id="mood" name="mood" placeholder="e.g., energetic, chill, melancholic, upbeat..." class="text-input">
+                </div>
+
+                <!-- Tempo Slider -->
+<div class="form-section">
+                    <label for="tempo" class="section-label">Tempo / Energy Level</label>
+                    <div class="tempo-container">
+                        <input type="range" id="tempo" name="tempo" min="1" max="5" value="3" class="slider">
+                    </div>
+                    <div class="tempo-value">
+                        <span id="tempo-display">Moderate</span>
+                    </div>
+                </div>
+
+                <!-- Advanced Options (Instruments) -->
+                <div class="form-section">
+                    <button type="button" id="toggle-advanced" class="btn-advanced">
+                        ⚙️ Advanced Options (Instruments)
+                    </button>
+                    
+                    <div id="advanced-options" class="advanced-hidden">
+                        <p class="advanced-description">Select which instruments you want (✓) or don't want (✗)</p>
+                        
+                        <div class="instruments-grid">
+                            <div class="instrument-item">
+                                <span class="instrument-name">🎷 Saxophone</span>
+                                <div class="toggle-buttons">
+                                    <button type="button" class="toggle-btn" data-instrument="saxophone" data-state="neutral">—</button>
+                                </div>
+                            </div>
+
+                            <div class="instrument-item">
+                                <span class="instrument-name">🎻 Violin</span>
+                                <div class="toggle-buttons">
+                                    <button type="button" class="toggle-btn" data-instrument="violin" data-state="neutral">—</button>
+                                </div>
+                            </div>
+
+                            <div class="instrument-item">
+                                <span class="instrument-name">🎺 Clarinet</span>
+                                <div class="toggle-buttons">
+                                    <button type="button" class="toggle-btn" data-instrument="clarinet" data-state="neutral">—</button>
+                                </div>
+                            </div>
+
+                            <div class="instrument-item">
+                                <span class="instrument-name">🎸 Guitar</span>
+                                <div class="toggle-buttons">
+                                    <button type="button" class="toggle-btn" data-instrument="guitar" data-state="neutral">—</button>
+                                </div>
+                            </div>
+
+                            <div class="instrument-item">
+                                <span class="instrument-name">🎹 Piano</span>
+                                <div class="toggle-buttons">
+                                    <button type="button" class="toggle-btn" data-instrument="piano" data-state="neutral">—</button>
+                                </div>
+                            </div>
+
+                            <div class="instrument-item">
+                                <span class="instrument-name">🥁 Drums</span>
+                                <div class="toggle-buttons">
+                                    <button type="button" class="toggle-btn" data-instrument="drums" data-state="neutral">—</button>
+                                </div>
+                            </div>
+
+                            <div class="instrument-item">
+                                <span class="instrument-name">🎤 Vocals</span>
+                                <div class="toggle-buttons">
+                                    <button type="button" class="toggle-btn" data-instrument="vocals" data-state="neutral">—</button>
+                                </div>
+                            </div>
+
+                            <div class="instrument-item">
+                                <span class="instrument-name">🎺 Trumpet</span>
+                                <div class="toggle-buttons">
+                                    <button type="button" class="toggle-btn" data-instrument="trumpet" data-state="neutral">—</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Submit Button -->
+                <button type="submit" id="submit-btn" class="btn-submit">
+                    Get Recommendations 🎶
+                </button>
+
+                <!-- Loading Spinner -->
+                <div id="loading" class="loading hidden">
+                    <div class="spinner"></div>
+                    <p>Finding your perfect music...</p>
+                </div>
+            </form>
+
+            <!-- Results Section -->
+            <div id="results" class="results hidden">
+                <h2>Your Recommendations</h2>
+                <div id="recommendations-container"></div>
+            </div>
+        </main>
+
+        <footer>
+            <p>Made with ❤️ for music lovers</p>
+        </footer>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>
