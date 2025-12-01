@@ -5,7 +5,7 @@ import sys
 # Add the backend directory to the Python path
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
-from database import initialize_database, insert_default_sources, save_suggestion, save_user_preferences, save_feedback, get_enabled_sources, get_excluded_bands
+from database import initialize_database, insert_default_sources, save_suggestion, save_user_preferences, save_feedback, get_enabled_sources, get_excluded_bands, get_full_feedback_history
 from api_handler import get_music_recommendations
 
 app = Flask(__name__, 
@@ -129,6 +129,26 @@ def sources():
         })
     except Exception as e:
         print(f"Error in /api/sources: {str(e)}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+@app.route('/history')
+def history_page():
+    """Render the history page."""
+    return render_template('history.html')
+
+@app.route('/api/history', methods=['GET'])
+def get_history():
+    """Get user's feedback history."""
+    try:
+        history = get_full_feedback_history()
+        return jsonify({
+            'success': True,
+            'history': history
+        })
+    except Exception as e:
+        print(f"Error in /api/history: {str(e)}")
         return jsonify({
             'success': False,
             'error': str(e)

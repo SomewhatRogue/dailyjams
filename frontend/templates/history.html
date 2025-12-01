@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Music History - DailyJams</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/history.css') }}">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🎵 My Music History</h1>
+            <p class="tagline">Your past ratings and discoveries</p>
+            <a href="/" class="btn-back">← Back to Recommendations</a>
+        </header>
+
+        <main>
+            <!-- Filter Section -->
+            <div class="filters-section">
+                <div class="filter-buttons">
+                    <button class="filter-btn active" data-filter="all">All</button>
+                    <button class="filter-btn" data-filter="positive">👍 Loved</button>
+                    <button class="filter-btn" data-filter="skipped">⏭️ Skipped</button>
+                    <button class="filter-btn" data-filter="negative">👎 Not For Me</button>
+                </div>
+                
+                <div class="search-box">
+                    <input type="text" id="search-input" placeholder="Search by band name..." class="search-input">
+                </div>
+            </div>
+
+            <!-- Stats Section -->
+            <div class="stats-section">
+                <div class="stat-card">
+                    <div class="stat-number" id="total-count">0</div>
+                    <div class="stat-label">Total Rated</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="loved-count">0</div>
+                    <div class="stat-label">Loved</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="skipped-count">0</div>
+                    <div class="stat-label">Skipped</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="disliked-count">0</div>
+                    <div class="stat-label">Not For Me</div>
+                </div>
+            </div>
+
+            <!-- Loading -->
+            <div id="loading" class="loading">
+                <div class="spinner"></div>
+                <p>Loading your history...</p>
+            </div>
+
+            <!-- History Results -->
+            <div id="history-results" class="history-results hidden">
+                <div id="history-container"></div>
+                <div id="no-results" class="no-results hidden">
+                    <p>No ratings found matching your filter.</p>
+                </div>
+            </div>
+        </main>
+
+        <footer>
+            <p>Made with ❤️ for music lovers</p>
+        </footer>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/history.js') }}"></script>
+</body>
+</html>

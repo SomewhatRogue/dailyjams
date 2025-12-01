@@ -444,3 +444,18 @@ footer {
         grid-template-columns: repeat(2, 1fr);
     }
 }
+.btn-history {
+    display: inline-block;
+    margin-top: 15px;
+    padding: 10px 20px;
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+    text-decoration: none;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+}
+
+.btn-history:hover {
+    background: rgba(255, 255, 255, 0.3);
+    transform: translateY(-2px);
+}

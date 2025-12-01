@@ -215,3 +215,33 @@ if __name__ == '__main__':
     insert_default_sources()
     print("\n✅ Database setup complete!")
     print(f"Database location: {DB_PATH}")
+
+def get_full_feedback_history():
+    """Get complete feedback history with all details for the history page."""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    
+    cursor.execute('''
+        SELECT 
+            ms.id,
+            ms.band_name,
+            ms.genre,
+            ms.description,
+            ms.match_reason,
+            up.time_of_day,
+            up.mood,
+            up.tempo,
+            up.instruments_yes,
+            up.instruments_no,
+            uf.feedback_type,
+            uf.created_at
+        FROM user_feedback uf
+        JOIN music_suggestions ms ON uf.suggestion_id = ms.id
+        LEFT JOIN user_preferences up ON ms.id = up.suggestion_id
+        ORDER BY uf.created_at DESC
+    ''')
+    
+    history = cursor.fetchall()
+    conn.close()
+    
+    return [dict(row) for row in history]
