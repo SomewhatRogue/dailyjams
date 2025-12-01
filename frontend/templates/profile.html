@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Profile & Settings - DailyJams</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/profile.css') }}">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>⚙️ Profile & Settings</h1>
+            <p class="tagline">Customize your music discovery experience</p>
+            <a href="/" class="btn-back">← Back to Recommendations</a>
+        </header>
+
+        <main>
+            <!-- Music Sources Section -->
+            <div class="settings-section">
+                <h2>🎵 Music Discovery Sources</h2>
+                <p class="section-description">
+                    Choose which sources ChatGPT should use when researching music recommendations. 
+                    Enabled sources will be used to find bands that match your preferences.
+                </p>
+
+                <!-- Loading -->
+                <div id="loading" class="loading">
+                    <div class="spinner"></div>
+                    <p>Loading sources...</p>
+                </div>
+
+                <!-- Sources List -->
+                <div id="sources-container" class="sources-container hidden">
+                    <!-- Sources will be populated by JavaScript -->
+                </div>
+
+                <div class="save-section">
+                    <button id="save-btn" class="btn-save" disabled>
+                        💾 Save Changes
+                    </button>
+                    <span id="save-status" class="save-status"></span>
+                </div>
+            </div>
+
+            <!-- Future sections can go here -->
+            <!-- <div class="settings-section">
+                <h2>👤 User Preferences</h2>
+                <p>Coming soon...</p>
+            </div> -->
+        </main>
+
+        <footer>
+            <p>Made with ❤️ for music lovers</p>
+        </footer>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/profile.js') }}"></script>
+</body>
+</html>

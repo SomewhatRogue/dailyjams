@@ -25,6 +25,7 @@ def initialize_database():
             genre TEXT,
             description TEXT,
             match_reason TEXT,
+            sources_used TEXT,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     ''')
@@ -101,15 +102,18 @@ def insert_default_sources():
 
 # CRUD Functions for Music Suggestions
 
-def save_suggestion(band_name, genre=None, description=None, match_reason=None):
+def save_suggestion(band_name, genre=None, description=None, match_reason=None, sources_used=None):
     """Save a music suggestion to the database."""
     conn = get_db_connection()
     cursor = conn.cursor()
     
+    # Convert sources list to comma-separated string
+    sources_str = ','.join(sources_used) if sources_used else ''
+    
     cursor.execute('''
-        INSERT INTO music_suggestions (band_name, genre, description, match_reason)
-        VALUES (?, ?, ?, ?)
-    ''', (band_name, genre, description, match_reason))
+        INSERT INTO music_suggestions (band_name, genre, description, match_reason, sources_used)
+        VALUES (?, ?, ?, ?, ?)
+    ''', (band_name, genre, description, match_reason, sources_str))
     
     suggestion_id = cursor.lastrowid
     conn.commit()
@@ -135,7 +139,7 @@ def save_user_preferences(suggestion_id, time_of_day, mood, tempo, instruments_y
     conn.close()
 
 def save_feedback(suggestion_id, feedback_type):
-    """Save user feedback (positive/negative) for a suggestion."""
+    """Save user feedback (positive/negative/skipped) for a suggestion."""
     conn = get_db_connection()
     cursor = conn.cursor()
     
@@ -163,6 +167,36 @@ def get_enabled_sources():
     
     return [dict(source) for source in sources]
 
+def get_all_sources():
+    """Get all music sources (enabled and disabled)."""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    
+    cursor.execute('''
+        SELECT id, source_name, source_url, is_enabled, description
+        FROM source_preferences
+        ORDER BY source_name
+    ''')
+    
+    sources = cursor.fetchall()
+    conn.close()
+    
+    return [dict(source) for source in sources]
+
+def update_source_preference(source_id, is_enabled):
+    """Enable or disable a music source."""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    
+    cursor.execute('''
+        UPDATE source_preferences
+        SET is_enabled = ?
+        WHERE id = ?
+    ''', (is_enabled, source_id))
+    
+    conn.commit()
+    conn.close()
+
 def get_user_feedback_history():
     """Get all feedback with associated preferences for learning."""
     conn = get_db_connection()
@@ -187,6 +221,7 @@ def get_user_feedback_history():
     conn.close()
     
     return [dict(row) for row in history]
+
 def get_recently_skipped_bands(days=5):
     """Get bands that were skipped in the last X days."""
     conn = get_db_connection()
@@ -208,13 +243,6 @@ def get_recently_skipped_bands(days=5):
 def get_excluded_bands():
     """Get all bands to exclude from recommendations (recently skipped)."""
     return get_recently_skipped_bands(days=5)
-# Test function
-if __name__ == '__main__':
-    print("Initializing database...")
-    initialize_database()
-    insert_default_sources()
-    print("\n✅ Database setup complete!")
-    print(f"Database location: {DB_PATH}")
 
 def get_full_feedback_history():
     """Get complete feedback history with all details for the history page."""
@@ -228,6 +256,7 @@ def get_full_feedback_history():
             ms.genre,
             ms.description,
             ms.match_reason,
+            ms.sources_used,
             up.time_of_day,
             up.mood,
             up.tempo,
@@ -245,3 +274,11 @@ def get_full_feedback_history():
     conn.close()
     
     return [dict(row) for row in history]
+
+# Test function
+if __name__ == '__main__':
+    print("Initializing database...")
+    initialize_database()
+    insert_default_sources()
+    print("\n✅ Database setup complete!")
+    print(f"Database location: {DB_PATH}")

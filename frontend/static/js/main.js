@@ -191,11 +191,15 @@ function displayRecommendations(recommendations) {
         const card = document.createElement('div');
         card.className = 'recommendation-card';
         
+// Get sources for display
+        const sourcesUsed = rec.sources_used || '';
+        
         card.innerHTML = `
             <div class="band-name">${rec.band_name}</div>
             <div class="genre">${rec.genre || 'Various Genres'}</div>
             <div class="description">${rec.description}</div>
             <div class="match-reason">Why this matches: ${rec.match_reason}</div>
+            ${sourcesUsed ? `<div class="sources-used">📚 Sources: ${sourcesUsed}</div>` : ''}
             <div class="feedback-buttons">
                 <button class="btn-feedback thumbs-up" data-id="${rec.id}" data-type="positive">
                     👍 Love it

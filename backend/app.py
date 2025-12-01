@@ -5,7 +5,7 @@ import sys
 # Add the backend directory to the Python path
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
-from database import initialize_database, insert_default_sources, save_suggestion, save_user_preferences, save_feedback, get_enabled_sources, get_excluded_bands, get_full_feedback_history
+from database import initialize_database, insert_default_sources, save_suggestion, save_user_preferences, save_feedback, get_enabled_sources, get_excluded_bands, get_full_feedback_history, get_all_sources, update_source_preference
 from api_handler import get_music_recommendations
 
 app = Flask(__name__, 
@@ -56,12 +56,16 @@ def recommend():
         
         # Save each recommendation to database
         saved_recommendations = []
+# Get list of source names for tracking
+        source_names = [s['source_name'] for s in sources]
+        
         for rec in recommendations:
             suggestion_id = save_suggestion(
                 band_name=rec['band_name'],
                 genre=rec.get('genre', ''),
                 description=rec.get('description', ''),
-                match_reason=rec.get('match_reason', '')
+                match_reason=rec.get('match_reason', ''),
+                sources_used=source_names
             )
             
             # Save the preferences that generated this suggestion
@@ -149,6 +153,53 @@ def get_history():
         })
     except Exception as e:
         print(f"Error in /api/history: {str(e)}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+@app.route('/profile')
+def profile_page():
+    """Render the profile/settings page."""
+    return render_template('profile.html')
+
+@app.route('/api/sources/all', methods=['GET'])
+def get_sources():
+    """Get all music sources with their enabled status."""
+    try:
+        sources = get_all_sources()
+        return jsonify({
+            'success': True,
+            'sources': sources
+        })
+    except Exception as e:
+        print(f"Error in /api/sources/all: {str(e)}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@app.route('/api/sources/update', methods=['POST'])
+def update_sources():
+    """Update source enabled/disabled status."""
+    try:
+        data = request.json
+        source_id = data.get('source_id')
+        is_enabled = data.get('is_enabled')
+        
+        if source_id is None or is_enabled is None:
+            return jsonify({
+                'success': False,
+                'error': 'Missing required fields'
+            }), 400
+        
+        update_source_preference(source_id, is_enabled)
+        
+        return jsonify({
+            'success': True,
+            'message': 'Source preference updated!'
+        })
+    except Exception as e:
+        print(f"Error in /api/sources/update: {str(e)}")
         return jsonify({
             'success': False,
             'error': str(e)

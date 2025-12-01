@@ -8,11 +8,15 @@
 </head>
 <body>
     <div class="container">
-<header>
+        <header>
             <h1>🎵 DailyJams</h1>
             <p class="tagline">Discover music based on your vibe</p>
-            <a href="/history" class="btn-history">📜 View History</a>
+            <div class="header-links">
+                <a href="/history" class="btn-header-link">📜 View History</a>
+                <a href="/profile" class="btn-header-link">⚙️ Settings</a>
+            </div>
         </header>
+
         <main>
             <form id="preferences-form">
                 <!-- Time of Day Section -->
@@ -33,7 +37,7 @@
                     <input type="text" id="mood" name="mood" placeholder="e.g., energetic, chill, melancholic, upbeat..." class="text-input">
                 </div>
 
-<!-- Genre Section -->
+                <!-- Genre Section -->
                 <div class="form-section">
                     <label class="section-label">Genres (select any that interest you)</label>
                     <div class="genres-grid">
@@ -90,7 +94,7 @@
                 </div>
 
                 <!-- Tempo Slider -->
-<div class="form-section">
+                <div class="form-section">
                     <label for="tempo" class="section-label">Tempo / Energy Level</label>
                     <div class="tempo-container">
                         <input type="range" id="tempo" name="tempo" min="1" max="5" value="3" class="slider">
