@@ -76,7 +76,7 @@ def search_trending_music(genres=None):
     else:
         return "Focus on popular artists from 2024-2025 based on your training data."
 
-def get_music_recommendations(time_of_day, mood, tempo, instruments_yes, instruments_no, sources, excluded_bands=None, genres=None, trending_now=False):
+def get_music_recommendations(time_of_day, mood, tempo, instruments_yes, instruments_no, sources, excluded_bands=None, genres=None, trending_now=False, discover_new=False):
     """
     Get music recommendations from ChatGPT based on user preferences.
     """
@@ -135,6 +135,12 @@ IMPORTANT: Return ONLY a valid JSON array with exactly this structure:
 
 Return 5 recommendations. Make sure the response is ONLY valid JSON, no other text.
 """
+    # DEBUG: Print the full prompt being sent to ChatGPT
+    print("\n" + "="*80)
+    print("📤 SENDING TO CHATGPT:")
+    print("="*80)
+    print(prompt)
+    print("="*80 + "\n")
     
     try:
         # Call ChatGPT API
@@ -150,6 +156,12 @@ Return 5 recommendations. Make sure the response is ONLY valid JSON, no other te
         
         # Extract the response text
         response_text = response.choices[0].message.content.strip()
+                # DEBUG: Print the raw response from ChatGPT
+        print("\n" + "="*80)
+        print("📥 RECEIVED FROM CHATGPT:")
+        print("="*80)
+        print(response_text)
+        print("="*80 + "\n")
         
         # Try to parse as JSON
         try:

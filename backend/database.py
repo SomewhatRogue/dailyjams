@@ -307,6 +307,22 @@ def delete_source(source_id):
     conn.commit()
     conn.close()
 
+def get_all_rated_bands():
+    """Get all bands that the user has rated (positive, negative, or skipped)."""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    
+    cursor.execute('''
+        SELECT DISTINCT ms.band_name
+        FROM user_feedback uf
+        JOIN music_suggestions ms ON uf.suggestion_id = ms.id
+    ''')
+    
+    rated = cursor.fetchall()
+    conn.close()
+    
+    return [row['band_name'] for row in rated]
+
 # Test function
 if __name__ == '__main__':
     print("Initializing database...")

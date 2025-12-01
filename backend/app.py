@@ -5,7 +5,7 @@ import sys
 # Add the backend directory to the Python path
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
-from database import initialize_database, insert_default_sources, save_suggestion, save_user_preferences, save_feedback, get_enabled_sources, get_excluded_bands, get_full_feedback_history, get_all_sources, update_source_preference, add_new_source, delete_source
+from database import initialize_database, insert_default_sources, save_suggestion, save_user_preferences, save_feedback, get_enabled_sources, get_excluded_bands, get_full_feedback_history, get_all_sources, update_source_preference, add_new_source, delete_source, get_all_rated_bands
 from api_handler import get_music_recommendations
 
 app = Flask(__name__, 
@@ -36,12 +36,18 @@ def recommend():
         instruments_no = data.get('instruments_no', [])
         genres = data.get('genres', [])
         trending_now = data.get('trending_now', False)
+        discover_new = data.get('discover_new', False)
         
         # Get enabled sources
         sources = get_enabled_sources()
         
-        # Get excluded bands (recently skipped)
-        excluded_bands = get_excluded_bands()
+        # Get excluded bands
+        if discover_new:
+            # Exclude ALL previously rated bands
+            excluded_bands = get_all_rated_bands()
+        else:
+            # Only exclude recently skipped bands (5-day cooldown)
+            excluded_bands = get_excluded_bands()
         
         # Get list of source names for tracking
         source_names = [s['source_name'] for s in sources]
@@ -56,7 +62,8 @@ def recommend():
             sources=sources,
             excluded_bands=excluded_bands,
             genres=genres,
-            trending_now=trending_now
+            trending_now=trending_now,
+            discover_new=discover_new
         )
         
         # Save each recommendation to database

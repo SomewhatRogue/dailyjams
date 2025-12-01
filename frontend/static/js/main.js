@@ -134,6 +134,7 @@ function initializeForm() {
         });
         
         const trendingNow = document.getElementById('trending-now').checked;
+        const discoverNew = document.getElementById('discover-new').checked;
         
         const requestData = {
             time_of_day: timeOfDay,
@@ -142,7 +143,8 @@ function initializeForm() {
             instruments_yes: instrumentsYes,
             instruments_no: instrumentsNo,
             genres: selectedGenres,
-            trending_now: trendingNow
+            trending_now: trendingNow,
+            discover_new: discoverNew
         };
         
         showLoading();
