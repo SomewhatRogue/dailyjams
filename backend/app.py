@@ -34,6 +34,7 @@ def recommend():
         tempo = data.get('tempo', 50)
         instruments_yes = data.get('instruments_yes', [])
         instruments_no = data.get('instruments_no', [])
+        genres = data.get('genres', [])
         
         # Get enabled sources
         sources = get_enabled_sources()
@@ -49,7 +50,8 @@ def recommend():
             instruments_yes=instruments_yes,
             instruments_no=instruments_no,
             sources=sources,
-            excluded_bands=excluded_bands
+            excluded_bands=excluded_bands,
+            genres=genres
         )
         
         # Save each recommendation to database

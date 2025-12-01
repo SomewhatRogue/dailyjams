@@ -127,12 +127,19 @@ function initializeForm() {
             }
         }
         
+        const selectedGenres = [];
+        const genreCheckboxes = document.querySelectorAll('input[name="genre"]:checked');
+        genreCheckboxes.forEach(checkbox => {
+            selectedGenres.push(checkbox.value);
+        });
+        
         const requestData = {
             time_of_day: timeOfDay,
             mood: mood,
             tempo: parseInt(tempo),
             instruments_yes: instrumentsYes,
-            instruments_no: instrumentsNo
+            instruments_no: instrumentsNo,
+            genres: selectedGenres
         };
         
         showLoading();

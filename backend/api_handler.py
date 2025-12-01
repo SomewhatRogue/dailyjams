@@ -9,7 +9,7 @@ load_dotenv()
 # Initialize OpenAI client
 client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
 
-def get_music_recommendations(time_of_day, mood, tempo, instruments_yes, instruments_no, sources, excluded_bands=None):
+def get_music_recommendations(time_of_day, mood, tempo, instruments_yes, instruments_no, sources, excluded_bands=None, genres=None):
     """
     Get music recommendations from ChatGPT based on user preferences.
     
@@ -21,6 +21,7 @@ def get_music_recommendations(time_of_day, mood, tempo, instruments_yes, instrum
         instruments_no: List of instruments that should NOT be present
         sources: List of enabled music discovery sources
         excluded_bands: List of band names to exclude (recently skipped)
+        genres: List of selected genres
     
     Returns:
         List of recommendation dictionaries with band_name, genre, description, match_reason
@@ -40,6 +41,11 @@ USER PREFERENCES:
     
     if instruments_no:
         prompt += f"- Instruments that should NOT be present: {', '.join(instruments_no)}\n"
+    
+    if genres and len(genres) > 0:
+        prompt += f"- Genres: {', '.join(genres)}\n"
+    else:
+        prompt += "- Genres: Any genre is fine\n"
     
     prompt += f"\nRESOURCES TO RESEARCH FROM:\n"
     for source in sources:
@@ -117,7 +123,8 @@ if __name__ == '__main__':
         instruments_yes=['guitar', 'drums'],
         instruments_no=['violin'],
         sources=test_sources,
-        excluded_bands=[]
+        excluded_bands=[],
+        genres=['rock', 'indie']
     )
     
     print("\n✅ API Test Results:")

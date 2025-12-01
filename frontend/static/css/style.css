@@ -395,3 +395,52 @@ footer {
     color: white;
     border-color: #9e9e9e;
 }
+
+/* Genre Selection */
+.genres-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-bottom: 10px;
+}
+
+.genre-checkbox {
+    display: flex;
+    align-items: center;
+    padding: 12px;
+    background: #f9f9f9;
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.genre-checkbox:hover {
+    border-color: #667eea;
+    background: #f0f0ff;
+}
+
+.genre-checkbox input[type="checkbox"] {
+    margin-right: 8px;
+    cursor: pointer;
+    width: 18px;
+    height: 18px;
+}
+
+.genre-checkbox input[type="checkbox"]:checked + span {
+    font-weight: 600;
+    color: #667eea;
+}
+
+.genre-note {
+    font-size: 0.9em;
+    color: #888;
+    font-style: italic;
+    margin-top: 5px;
+}
+
+@media (max-width: 600px) {
+    .genres-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
