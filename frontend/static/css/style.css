@@ -406,6 +406,16 @@ main {
     color: #888;
 }
 
+.trending-used {
+    margin-top: 12px;
+    padding: 12px;
+    background: #fff3e0;
+    border-left: 3px solid #ff9800;
+    font-size: 0.85em;
+    color: #e65100;
+    border-radius: 4px;
+}
+
 .feedback-buttons {
     margin-top: 15px;
     display: flex;
@@ -459,6 +469,27 @@ footer {
     padding: 20px;
     color: #999;
     font-size: 0.9em;
+}
+
+/* Trending Now Toggle */
+.trending-checkbox {
+    width: 20px;
+    height: 20px;
+    margin-right: 10px;
+    cursor: pointer;
+    vertical-align: middle;
+}
+
+.section-label input[type="checkbox"] {
+    accent-color: #667eea;
+}
+
+.trending-note {
+    font-size: 0.85em;
+    color: #888;
+    font-style: italic;
+    margin-top: 10px;
+    margin-left: 30px;
 }
 
 /* Responsive Design */

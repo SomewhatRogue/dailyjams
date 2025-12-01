@@ -12,10 +12,40 @@
         <header>
             <h1>⚙️ Profile & Settings</h1>
             <p class="tagline">Customize your music discovery experience</p>
-            <a href="/" class="btn-back">← Back to Recommendations</a>
+            <a href="/" class="btn-header-link">← Back to Recommendations</a>
         </header>
 
         <main>
+            <!-- Add New Source Section -->
+            <div class="settings-section">
+                <h2>➕ Add New Music Source</h2>
+                <p class="section-description">
+                    Add custom sources for ChatGPT to research when finding music recommendations.
+                </p>
+
+                <div class="add-source-form">
+                    <div class="form-group">
+                        <label for="new-source-name">Source Name *</label>
+                        <input type="text" id="new-source-name" placeholder="e.g., Reddit - r/indieheads" class="form-input">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="new-source-url">Source URL</label>
+                        <input type="text" id="new-source-url" placeholder="https://..." class="form-input">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="new-source-description">Description</label>
+                        <textarea id="new-source-description" placeholder="Brief description of this source..." class="form-textarea" rows="3"></textarea>
+                    </div>
+
+                    <button id="add-source-btn" class="btn-add-source">
+                        ➕ Add Source
+                    </button>
+                    <span id="add-status" class="add-status"></span>
+                </div>
+            </div>
+
             <!-- Music Sources Section -->
             <div class="settings-section">
                 <h2>🎵 Music Discovery Sources</h2>
@@ -42,12 +72,6 @@
                     <span id="save-status" class="save-status"></span>
                 </div>
             </div>
-
-            <!-- Future sections can go here -->
-            <!-- <div class="settings-section">
-                <h2>👤 User Preferences</h2>
-                <p>Coming soon...</p>
-            </div> -->
         </main>
 
         <footer>
@@ -57,4 +81,3 @@
 
     <script src="{{ url_for('static', filename='js/profile.js') }}"></script>
 </body>
-</html>

@@ -5,7 +5,7 @@ import sys
 # Add the backend directory to the Python path
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
-from database import initialize_database, insert_default_sources, save_suggestion, save_user_preferences, save_feedback, get_enabled_sources, get_excluded_bands, get_full_feedback_history, get_all_sources, update_source_preference
+from database import initialize_database, insert_default_sources, save_suggestion, save_user_preferences, save_feedback, get_enabled_sources, get_excluded_bands, get_full_feedback_history, get_all_sources, update_source_preference, add_new_source, delete_source
 from api_handler import get_music_recommendations
 
 app = Flask(__name__, 
@@ -35,12 +35,16 @@ def recommend():
         instruments_yes = data.get('instruments_yes', [])
         instruments_no = data.get('instruments_no', [])
         genres = data.get('genres', [])
+        trending_now = data.get('trending_now', False)
         
         # Get enabled sources
         sources = get_enabled_sources()
         
         # Get excluded bands (recently skipped)
         excluded_bands = get_excluded_bands()
+        
+        # Get list of source names for tracking
+        source_names = [s['source_name'] for s in sources]
         
         # Call ChatGPT to get recommendations
         recommendations = get_music_recommendations(
@@ -51,14 +55,12 @@ def recommend():
             instruments_no=instruments_no,
             sources=sources,
             excluded_bands=excluded_bands,
-            genres=genres
+            genres=genres,
+            trending_now=trending_now
         )
         
         # Save each recommendation to database
         saved_recommendations = []
-# Get list of source names for tracking
-        source_names = [s['source_name'] for s in sources]
-        
         for rec in recommendations:
             suggestion_id = save_suggestion(
                 band_name=rec['band_name'],
@@ -100,7 +102,7 @@ def feedback():
     try:
         data = request.json
         suggestion_id = data.get('suggestion_id')
-        feedback_type = data.get('feedback_type')  # 'positive', 'negative', or 'skipped'
+        feedback_type = data.get('feedback_type')
         
         if not suggestion_id or not feedback_type:
             return jsonify({
@@ -137,6 +139,7 @@ def sources():
             'success': False,
             'error': str(e)
         }), 500
+
 @app.route('/history')
 def history_page():
     """Render the history page."""
@@ -157,6 +160,7 @@ def get_history():
             'success': False,
             'error': str(e)
         }), 500
+
 @app.route('/profile')
 def profile_page():
     """Render the profile/settings page."""
@@ -200,6 +204,68 @@ def update_sources():
         })
     except Exception as e:
         print(f"Error in /api/sources/update: {str(e)}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@app.route('/api/sources/add', methods=['POST'])
+def add_source():
+    """Add a new custom music source."""
+    try:
+        data = request.json
+        source_name = data.get('source_name')
+        source_url = data.get('source_url', '')
+        description = data.get('description', '')
+        is_enabled = data.get('is_enabled', 1)
+        
+        if not source_name:
+            return jsonify({
+                'success': False,
+                'error': 'Source name is required'
+            }), 400
+        
+        source_id = add_new_source(source_name, source_url, description, is_enabled)
+        
+        if source_id is None:
+            return jsonify({
+                'success': False,
+                'error': 'Source name already exists'
+            }), 400
+        
+        return jsonify({
+            'success': True,
+            'message': 'Source added successfully!',
+            'source_id': source_id
+        })
+    except Exception as e:
+        print(f"Error in /api/sources/add: {str(e)}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@app.route('/api/sources/delete', methods=['POST'])
+def delete_source_route():
+    """Delete a custom music source."""
+    try:
+        data = request.json
+        source_id = data.get('source_id')
+        
+        if not source_id:
+            return jsonify({
+                'success': False,
+                'error': 'Source ID is required'
+            }), 400
+        
+        delete_source(source_id)
+        
+        return jsonify({
+            'success': True,
+            'message': 'Source deleted successfully!'
+        })
+    except Exception as e:
+        print(f"Error in /api/sources/delete: {str(e)}")
         return jsonify({
             'success': False,
             'error': str(e)

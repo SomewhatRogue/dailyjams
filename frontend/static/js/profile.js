@@ -6,6 +6,7 @@ let hasChanges = false;
 document.addEventListener('DOMContentLoaded', function() {
     loadSources();
     initializeSaveButton();
+    initializeAddSourceButton();
 });
 
 // Load sources from API
@@ -54,12 +55,15 @@ function createSourceCard(source) {
             <div class="source-description">${source.description || 'No description available'}</div>
             ${source.source_url ? `<a href="${source.source_url}" target="_blank" class="source-url">${source.source_url}</a>` : ''}
         </div>
-        <div class="source-toggle">
-            <label class="toggle-switch">
-                <input type="checkbox" ${isEnabled ? 'checked' : ''} onchange="toggleSource(${source.id}, this.checked)">
-                <span class="toggle-slider"></span>
-            </label>
-            <span class="toggle-label">${isEnabled ? 'Enabled' : 'Disabled'}</span>
+        <div class="source-actions">
+            <button class="btn-delete" onclick="deleteSource(${source.id})">🗑️ Delete</button>
+            <div class="source-toggle">
+                <label class="toggle-switch">
+                    <input type="checkbox" ${isEnabled ? 'checked' : ''} onchange="toggleSource(${source.id}, this.checked)">
+                    <span class="toggle-slider"></span>
+                </label>
+                <span class="toggle-label">${isEnabled ? 'Enabled' : 'Disabled'}</span>
+            </div>
         </div>
     `;
     
@@ -90,6 +94,118 @@ function toggleSource(sourceId, isEnabled) {
     // Mark as having changes
     hasChanges = true;
     document.getElementById('save-btn').disabled = false;
+}
+
+// Delete source
+async function deleteSource(sourceId) {
+    if (!confirm('Are you sure you want to delete this source?')) {
+        return;
+    }
+    
+    try {
+        const response = await fetch('/api/sources/delete', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                source_id: sourceId
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            // Remove from local state
+            sources = sources.filter(s => s.id !== sourceId);
+            
+            // Re-render
+            displaySources();
+            
+            // Show success message
+            const statusEl = document.getElementById('save-status');
+            statusEl.textContent = '✓ Source deleted!';
+            statusEl.className = 'save-status success';
+            
+            setTimeout(() => {
+                statusEl.textContent = '';
+            }, 3000);
+        } else {
+            alert('Error deleting source: ' + data.error);
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('Failed to delete source');
+    }
+}
+
+// Initialize add source button
+function initializeAddSourceButton() {
+    const addBtn = document.getElementById('add-source-btn');
+    
+    addBtn.addEventListener('click', async function() {
+        const nameInput = document.getElementById('new-source-name');
+        const urlInput = document.getElementById('new-source-url');
+        const descInput = document.getElementById('new-source-description');
+        const statusEl = document.getElementById('add-status');
+        
+        const sourceName = nameInput.value.trim();
+        const sourceUrl = urlInput.value.trim();
+        const description = descInput.value.trim();
+        
+        // Validate
+        if (!sourceName) {
+            statusEl.textContent = '✗ Source name is required';
+            statusEl.className = 'add-status error';
+            return;
+        }
+        
+        statusEl.textContent = 'Adding...';
+        statusEl.className = 'add-status';
+        
+        try {
+            const response = await fetch('/api/sources/add', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    source_name: sourceName,
+                    source_url: sourceUrl,
+                    description: description,
+                    is_enabled: 1
+                })
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                // Clear form
+                nameInput.value = '';
+                urlInput.value = '';
+                descInput.value = '';
+                
+                // Show success
+                statusEl.textContent = '✓ Source added successfully!';
+                statusEl.className = 'add-status success';
+                
+                // Reload sources
+                await loadSources();
+                
+                // Clear status after 3 seconds
+                setTimeout(() => {
+                    statusEl.textContent = '';
+                }, 3000);
+            } else {
+                statusEl.textContent = '✗ ' + data.error;
+                statusEl.className = 'add-status error';
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            statusEl.textContent = '✗ Failed to add source';
+            statusEl.className = 'add-status error';
+        }
+    });
 }
 
 // Initialize save button

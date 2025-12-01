@@ -275,6 +275,38 @@ def get_full_feedback_history():
     
     return [dict(row) for row in history]
 
+def add_new_source(source_name, source_url, description, is_enabled=1):
+    """Add a new custom music source."""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    
+    try:
+        cursor.execute('''
+            INSERT INTO source_preferences (source_name, source_url, is_enabled, description)
+            VALUES (?, ?, ?, ?)
+        ''', (source_name, source_url, is_enabled, description))
+        
+        source_id = cursor.lastrowid
+        conn.commit()
+        conn.close()
+        return source_id
+    except sqlite3.IntegrityError:
+        conn.close()
+        return None  # Source name already exists
+
+def delete_source(source_id):
+    """Delete a custom music source."""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    
+    cursor.execute('''
+        DELETE FROM source_preferences
+        WHERE id = ?
+    ''', (source_id,))
+    
+    conn.commit()
+    conn.close()
+
 # Test function
 if __name__ == '__main__':
     print("Initializing database...")

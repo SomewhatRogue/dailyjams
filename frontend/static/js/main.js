@@ -133,13 +133,16 @@ function initializeForm() {
             selectedGenres.push(checkbox.value);
         });
         
+        const trendingNow = document.getElementById('trending-now').checked;
+        
         const requestData = {
             time_of_day: timeOfDay,
             mood: mood,
             tempo: parseInt(tempo),
             instruments_yes: instrumentsYes,
             instruments_no: instrumentsNo,
-            genres: selectedGenres
+            genres: selectedGenres,
+            trending_now: trendingNow
         };
         
         showLoading();
@@ -191,15 +194,25 @@ function displayRecommendations(recommendations) {
         const card = document.createElement('div');
         card.className = 'recommendation-card';
         
-// Get sources for display
         const sourcesUsed = rec.sources_used || '';
+        const trendingUsed = rec.trending_used || '';
         
-        card.innerHTML = `
+        let cardHTML = `
             <div class="band-name">${rec.band_name}</div>
             <div class="genre">${rec.genre || 'Various Genres'}</div>
             <div class="description">${rec.description}</div>
             <div class="match-reason">Why this matches: ${rec.match_reason}</div>
-            ${sourcesUsed ? `<div class="sources-used">📚 Sources: ${sourcesUsed}</div>` : ''}
+        `;
+        
+if (rec.trending_enabled) {
+            cardHTML += `<div class="trending-used">🔥 Trending Now - Based on ${rec.trending_count} currently popular artists from Reddit</div>`;
+        }
+        
+        if (sourcesUsed) {
+            cardHTML += `<div class="sources-used">📚 Sources: ${sourcesUsed}</div>`;
+        }
+        
+        cardHTML += `
             <div class="feedback-buttons">
                 <button class="btn-feedback thumbs-up" data-id="${rec.id}" data-type="positive">
                     👍 Love it
@@ -213,6 +226,7 @@ function displayRecommendations(recommendations) {
             </div>
         `;
         
+        card.innerHTML = cardHTML;
         container.appendChild(card);
     });
     

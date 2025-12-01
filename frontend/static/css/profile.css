@@ -35,6 +35,78 @@
     margin-bottom: 25px;
 }
 
+/* Add Source Form */
+.add-source-form {
+    background: white;
+    padding: 25px;
+    border-radius: 12px;
+    border: 2px solid #e0e0e0;
+}
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-group label {
+    display: block;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 8px;
+    font-size: 0.95em;
+}
+
+.form-input,
+.form-textarea {
+    width: 100%;
+    padding: 12px;
+    font-size: 1em;
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    transition: border-color 0.3s ease;
+    font-family: inherit;
+}
+
+.form-input:focus,
+.form-textarea:focus {
+    outline: none;
+    border-color: #667eea;
+}
+
+.form-textarea {
+    resize: vertical;
+}
+
+.btn-add-source {
+    padding: 12px 30px;
+    font-size: 1em;
+    font-weight: 600;
+    color: white;
+    background: linear-gradient(135deg, #4caf50 0%, #45a049 100%);
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.btn-add-source:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(76, 175, 80, 0.4);
+}
+
+.add-status {
+    margin-left: 15px;
+    font-size: 0.95em;
+    font-weight: 600;
+}
+
+.add-status.success {
+    color: #4caf50;
+}
+
+.add-status.error {
+    color: #f44336;
+}
+
 /* Sources Container */
 .sources-container {
     display: grid;
@@ -51,6 +123,7 @@
     justify-content: space-between;
     align-items: center;
     transition: all 0.3s ease;
+    position: relative;
 }
 
 .source-card:hover {
@@ -91,6 +164,28 @@
 
 .source-url:hover {
     text-decoration: underline;
+}
+
+.source-actions {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.btn-delete {
+    padding: 8px 16px;
+    background: #f44336;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.9em;
+    transition: all 0.3s ease;
+}
+
+.btn-delete:hover {
+    background: #d32f2f;
+    transform: scale(1.05);
 }
 
 .source-toggle {
@@ -206,7 +301,7 @@ input:checked ~ .toggle-label {
         gap: 15px;
     }
     
-    .source-toggle {
+    .source-actions {
         width: 100%;
         justify-content: space-between;
     }
