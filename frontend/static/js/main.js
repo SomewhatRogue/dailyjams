@@ -195,36 +195,30 @@ function displayRecommendations(recommendations) {
         card.className = 'recommendation-card';
         
         const sourcesUsed = rec.sources_used || '';
-        const trendingUsed = rec.trending_used || '';
+        const spotifySearchUrl = 'https://open.spotify.com/search/' + encodeURIComponent(rec.band_name);
         
-        let cardHTML = `
-            <div class="band-name">${rec.band_name}</div>
-            <div class="genre">${rec.genre || 'Various Genres'}</div>
-            <div class="description">${rec.description}</div>
-            <div class="match-reason">Why this matches: ${rec.match_reason}</div>
-        `;
+        let cardHTML = '<div class="band-name">' + rec.band_name + '</div>';
+        cardHTML += '<div class="genre">' + (rec.genre || 'Various Genres') + '</div>';
+        cardHTML += '<div class="description">' + rec.description + '</div>';
+        cardHTML += '<div class="match-reason">Why this matches: ' + rec.match_reason + '</div>';
         
-if (rec.trending_enabled) {
-            cardHTML += `<div class="trending-used">🔥 Trending Now - Based on ${rec.trending_count} currently popular artists from Reddit</div>`;
+        if (rec.trending_enabled) {
+            cardHTML += '<div class="trending-used">🔥 Trending Now - Based on ' + rec.trending_count + ' currently popular artists from Reddit</div>';
         }
         
         if (sourcesUsed) {
-            cardHTML += `<div class="sources-used">📚 Sources: ${sourcesUsed}</div>`;
+            cardHTML += '<div class="sources-used">📚 Sources: ' + sourcesUsed + '</div>';
         }
         
-        cardHTML += `
-            <div class="feedback-buttons">
-                <button class="btn-feedback thumbs-up" data-id="${rec.id}" data-type="positive">
-                    👍 Love it
-                </button>
-                <button class="btn-feedback skip" data-id="${rec.id}" data-type="skipped">
-                    ⏭️ Skip
-                </button>
-                <button class="btn-feedback thumbs-down" data-id="${rec.id}" data-type="negative">
-                    👎 Not for me
-                </button>
-            </div>
-        `;
+        cardHTML += '<div class="spotify-link-container">';
+        cardHTML += '<a href="' + spotifySearchUrl + '" target="_blank" class="btn-spotify">🎧 Listen on Spotify</a>';
+        cardHTML += '</div>';
+        
+        cardHTML += '<div class="feedback-buttons">';
+        cardHTML += '<button class="btn-feedback thumbs-up" data-id="' + rec.id + '" data-type="positive">👍 Love it</button>';
+        cardHTML += '<button class="btn-feedback skip" data-id="' + rec.id + '" data-type="skipped">⏭️ Skip</button>';
+        cardHTML += '<button class="btn-feedback thumbs-down" data-id="' + rec.id + '" data-type="negative">👎 Not for me</button>';
+        cardHTML += '</div>';
         
         card.innerHTML = cardHTML;
         container.appendChild(card);

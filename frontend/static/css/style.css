@@ -516,3 +516,26 @@ footer {
         grid-template-columns: 1fr;
     }
 }
+/* Spotify Link */
+.spotify-link-container {
+    margin-top: 15px;
+    text-align: center;
+}
+
+.btn-spotify {
+    display: inline-block;
+    padding: 12px 24px;
+    background: #1DB954;
+    color: white;
+    text-decoration: none;
+    border-radius: 25px;
+    font-weight: 600;
+    font-size: 1em;
+    transition: all 0.3s ease;
+}
+
+.btn-spotify:hover {
+    background: #1ed760;
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(29, 185, 84, 0.4);
+}
