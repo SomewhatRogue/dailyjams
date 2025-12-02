@@ -139,18 +139,42 @@ def save_user_preferences(suggestion_id, time_of_day, mood, tempo, instruments_y
     conn.close()
 
 def save_feedback(suggestion_id, feedback_type):
-    """Save user feedback (positive/negative/skipped) for a suggestion."""
+    """Save or update user feedback (positive/negative/skipped) for a suggestion."""
+    print(f"🔍 DEBUG save_feedback: suggestion_id={suggestion_id}, feedback_type={feedback_type}")
+    
     conn = get_db_connection()
     cursor = conn.cursor()
     
+    # Check if feedback already exists for this suggestion
     cursor.execute('''
-        INSERT INTO user_feedback (suggestion_id, feedback_type)
-        VALUES (?, ?)
-    ''', (suggestion_id, feedback_type))
+        SELECT id FROM user_feedback
+        WHERE suggestion_id = ?
+    ''', (suggestion_id,))
+    
+    existing = cursor.fetchone()
+    
+    if existing:
+        # Update existing feedback
+        cursor.execute('''
+            UPDATE user_feedback
+            SET feedback_type = ?, created_at = CURRENT_TIMESTAMP
+            WHERE suggestion_id = ?
+        ''', (feedback_type, suggestion_id))
+        print(f"🔍 DEBUG: Updated existing feedback")
+    else:
+        # Insert new feedback
+        cursor.execute('''
+            INSERT INTO user_feedback (suggestion_id, feedback_type)
+            VALUES (?, ?)
+        ''', (suggestion_id, feedback_type))
+        print(f"🔍 DEBUG: Inserted new feedback")
+    
+    print(f"🔍 DEBUG: Rows affected: {cursor.rowcount}")
     
     conn.commit()
     conn.close()
-
+    
+    print(f"🔍 DEBUG: Feedback saved successfully!")
 def get_enabled_sources():
     """Get all enabled music discovery sources."""
     conn = get_db_connection()

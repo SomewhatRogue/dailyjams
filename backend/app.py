@@ -108,6 +108,7 @@ def feedback():
     """Save user feedback on a suggestion."""
     try:
         data = request.json
+        print(f"🔍 DEBUG: Received feedback request: {data}") 
         suggestion_id = data.get('suggestion_id')
         feedback_type = data.get('feedback_type')
         

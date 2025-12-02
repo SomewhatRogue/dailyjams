@@ -9,6 +9,7 @@ document.addEventListener('DOMContentLoaded', function() {
     initializeTempoSlider();
     initializeAdvancedToggle();
     initializeForm();
+    restoreRecommendations(); // Restore recommendations from previous session
 });
 
 // Time of Day Button Selection
@@ -147,6 +148,9 @@ function initializeForm() {
             discover_new: discoverNew
         };
         
+        // Clear old recommendations when submitting new search
+        sessionStorage.removeItem('lastRecommendations');
+        
         showLoading();
         
         try {
@@ -185,6 +189,9 @@ function hideLoading() {
 }
 
 function displayRecommendations(recommendations) {
+    // Save recommendations to sessionStorage for persistence across navigation
+    sessionStorage.setItem('lastRecommendations', JSON.stringify(recommendations));
+    
     hideLoading();
     
     const resultsSection = document.getElementById('results');
@@ -242,10 +249,15 @@ function initializeFeedbackButtons() {
             const parentDiv = this.parentElement;
             const allButtons = parentDiv.querySelectorAll('.btn-feedback');
             
+            // Remove previous selection styling
             allButtons.forEach(btn => {
-                btn.disabled = true;
-                btn.classList.add('selected');
+                btn.classList.remove('selected');
+                btn.disabled = false;
             });
+            
+            // Mark this button as selected
+            this.classList.add('selected');
+            this.disabled = true;
             
             try {
                 const response = await fetch('/api/feedback', {
@@ -262,27 +274,48 @@ function initializeFeedbackButtons() {
                 const data = await response.json();
                 
                 if (data.success) {
+                    // Temporarily show feedback text
+                    const originalText = this.textContent;
                     if (feedbackType === 'positive') {
-                        this.textContent = '👍 Thanks!';
+                        this.textContent = '👍 Saved!';
                     } else if (feedbackType === 'negative') {
-                        this.textContent = '👎 Noted!';
+                        this.textContent = '👎 Saved!';
                     } else if (feedbackType === 'skipped') {
-                        this.textContent = '⏭️ Skipped';
+                        this.textContent = '⏭️ Saved!';
                     }
+                    
+                    // Reset text after 2 seconds
+                    setTimeout(() => {
+                        this.textContent = originalText;
+                        this.disabled = false;
+                    }, 2000);
                 } else {
                     alert('Error saving feedback: ' + data.error);
-                    allButtons.forEach(btn => {
-                        btn.disabled = false;
-                        btn.classList.remove('selected');
-                    });
+                    this.classList.remove('selected');
+                    this.disabled = false;
                 }
             } catch (error) {
                 alert('Error: ' + error.message);
-                allButtons.forEach(btn => {
-                    btn.disabled = false;
-                    btn.classList.remove('selected');
-                });
+                this.classList.remove('selected');
+                this.disabled = false;
             }
         });
     });
+}
+
+// Restore recommendations from sessionStorage on page load
+function restoreRecommendations() {
+    const savedRecommendations = sessionStorage.getItem('lastRecommendations');
+    
+    if (savedRecommendations) {
+        try {
+            const recommendations = JSON.parse(savedRecommendations);
+            if (recommendations && recommendations.length > 0) {
+                displayRecommendations(recommendations);
+            }
+        } catch (error) {
+            console.error('Error restoring recommendations:', error);
+            sessionStorage.removeItem('lastRecommendations');
+        }
+    }
 }

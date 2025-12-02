@@ -112,6 +112,14 @@ function displayHistory() {
         const card = createHistoryCard(item);
         container.appendChild(card);
     });
+// Create cards for each item
+    filteredHistory.forEach(item => {
+        const card = createHistoryCard(item);
+        container.appendChild(card);
+    });
+    
+    // Initialize change rating buttons
+    initializeChangeRatingButtons(); // ADD THIS LINE
 }
 
 // Create a history card
@@ -162,9 +170,54 @@ function createHistoryCard(item) {
             <div class="pref-item">😊 Mood: ${item.mood || 'N/A'}</div>
             <div class="pref-item">🎵 Tempo: ${item.tempo || 'N/A'}/5</div>
             ${instrumentsYes !== 'None' ? `<div class="pref-item">✓ Instruments: ${instrumentsYes}</div>` : ''}
-            ${instrumentsNo !== 'None' ? `<div class="pref-item">✗ Avoid: ${instrumentsNo}</div>` : ''}
+ ${instrumentsNo !== 'None' ? `<div class="pref-item">✗ Avoid: ${instrumentsNo}</div>` : ''}
+        </div>
+        
+        <div class="change-rating-buttons">
+            <button class="btn-change-rating thumbs-up" data-id="${item.id}" data-type="positive">👍</button>
+            <button class="btn-change-rating skip" data-id="${item.id}" data-type="skipped">⏭️</button>
+            <button class="btn-change-rating thumbs-down" data-id="${item.id}" data-type="negative">👎</button>
         </div>
     `;
     
     return card;
+}
+// Initialize change rating buttons
+function initializeChangeRatingButtons() {
+    const changeButtons = document.querySelectorAll('.btn-change-rating');
+    
+    changeButtons.forEach(button => {
+        button.addEventListener('click', async function() {
+            const suggestionId = this.getAttribute('data-id');
+            const feedbackType = this.getAttribute('data-type');
+            
+            if (!confirm('Change your rating for this band?')) {
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/feedback', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        suggestion_id: suggestionId,
+                        feedback_type: feedbackType
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    // Reload history to show updated rating
+                    await loadHistory();
+                } else {
+                    alert('Error updating feedback: ' + data.error);
+                }
+            } catch (error) {
+                alert('Error: ' + error.message);
+            }
+        });
+    });
 }
