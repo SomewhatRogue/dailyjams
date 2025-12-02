@@ -90,7 +90,7 @@ def get_music_recommendations(time_of_day, mood, tempo, instruments_yes, instrum
 USER PREFERENCES:
 - Time of Day: {time_of_day}
 - Mood: {mood}
-- Tempo: {tempo}/100 (0=very slow, 100=very fast)
+- Tempo: {tempo*20}/100 (0=very slow, 100=very fast)
 """
     
     if instruments_yes:
