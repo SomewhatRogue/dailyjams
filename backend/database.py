@@ -69,7 +69,35 @@ def initialize_database():
             description TEXT
         )
     ''')
-    
+
+    # Table 5: User Playlists
+    # Stores playlists created in Spotify
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS user_playlists (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            playlist_name TEXT NOT NULL,
+            spotify_playlist_id TEXT,
+            spotify_url TEXT,
+            band_count INTEGER DEFAULT 0,
+            track_count INTEGER DEFAULT 0,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    ''')
+
+    # Table 6: Playlist Suggestions
+    # Junction table linking playlists to music suggestions
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS playlist_suggestions (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            playlist_id INTEGER NOT NULL,
+            suggestion_id INTEGER NOT NULL,
+            track_count INTEGER DEFAULT 3,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (playlist_id) REFERENCES user_playlists (id),
+            FOREIGN KEY (suggestion_id) REFERENCES music_suggestions (id)
+        )
+    ''')
+
     conn.commit()
     conn.close()
     print("✅ Database initialized successfully!")
@@ -335,17 +363,212 @@ def get_all_rated_bands():
     """Get all bands that the user has rated (positive, negative, or skipped)."""
     conn = get_db_connection()
     cursor = conn.cursor()
-    
+
     cursor.execute('''
         SELECT DISTINCT ms.band_name
         FROM user_feedback uf
         JOIN music_suggestions ms ON uf.suggestion_id = ms.id
     ''')
-    
+
     rated = cursor.fetchall()
     conn.close()
-    
+
     return [row['band_name'] for row in rated]
+
+def get_bands_in_playlists():
+    """Get all bands that have been added to playlists."""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    cursor.execute('''
+        SELECT DISTINCT ms.id, ms.band_name
+        FROM playlist_suggestions ps
+        JOIN music_suggestions ms ON ps.suggestion_id = ms.id
+    ''')
+
+    results = cursor.fetchall()
+    conn.close()
+
+    return {row['id']: row['band_name'] for row in results}
+
+def save_playlist(playlist_name, spotify_playlist_id, spotify_url, band_count, track_count):
+    """
+    Save a new playlist to the database.
+
+    Args:
+        playlist_name: Name of the playlist
+        spotify_playlist_id: Spotify's playlist ID
+        spotify_url: URL to the Spotify playlist
+        band_count: Number of artists in the playlist
+        track_count: Total number of tracks
+
+    Returns:
+        The ID of the newly created playlist
+    """
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    cursor.execute('''
+        INSERT INTO user_playlists (playlist_name, spotify_playlist_id, spotify_url, band_count, track_count)
+        VALUES (?, ?, ?, ?, ?)
+    ''', (playlist_name, spotify_playlist_id, spotify_url, band_count, track_count))
+
+    playlist_id = cursor.lastrowid
+    conn.commit()
+    conn.close()
+
+    return playlist_id
+
+def link_playlist_to_suggestions(playlist_id, suggestion_ids_with_counts):
+    """
+    Link a playlist to its music suggestions.
+
+    Args:
+        playlist_id: ID of the playlist
+        suggestion_ids_with_counts: List of tuples (suggestion_id, track_count)
+    """
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    for suggestion_id, track_count in suggestion_ids_with_counts:
+        cursor.execute('''
+            INSERT INTO playlist_suggestions (playlist_id, suggestion_id, track_count)
+            VALUES (?, ?, ?)
+        ''', (playlist_id, suggestion_id, track_count))
+
+    conn.commit()
+    conn.close()
+
+def get_all_playlists():
+    """
+    Get all user playlists.
+
+    Returns:
+        List of playlist dictionaries with details
+    """
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    cursor.execute('''
+        SELECT
+            id,
+            playlist_name,
+            spotify_playlist_id,
+            spotify_url,
+            band_count,
+            track_count,
+            created_at
+        FROM user_playlists
+        ORDER BY created_at DESC
+    ''')
+
+    playlists = []
+    for row in cursor.fetchall():
+        playlists.append({
+            'id': row['id'],
+            'playlist_name': row['playlist_name'],
+            'spotify_playlist_id': row['spotify_playlist_id'],
+            'spotify_url': row['spotify_url'],
+            'band_count': row['band_count'],
+            'track_count': row['track_count'],
+            'created_at': row['created_at']
+        })
+
+    conn.close()
+    return playlists
+
+def get_playlist_with_details(playlist_id):
+    """
+    Get a playlist with all its associated bands.
+
+    Args:
+        playlist_id: ID of the playlist
+
+    Returns:
+        Dictionary with playlist info and list of bands
+    """
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    # Get playlist info
+    cursor.execute('''
+        SELECT
+            id,
+            playlist_name,
+            spotify_playlist_id,
+            spotify_url,
+            band_count,
+            track_count,
+            created_at
+        FROM user_playlists
+        WHERE id = ?
+    ''', (playlist_id,))
+
+    playlist_row = cursor.fetchone()
+    if not playlist_row:
+        conn.close()
+        return None
+
+    playlist = {
+        'id': playlist_row['id'],
+        'playlist_name': playlist_row['playlist_name'],
+        'spotify_playlist_id': playlist_row['spotify_playlist_id'],
+        'spotify_url': playlist_row['spotify_url'],
+        'band_count': playlist_row['band_count'],
+        'track_count': playlist_row['track_count'],
+        'created_at': playlist_row['created_at']
+    }
+
+    # Get associated bands
+    cursor.execute('''
+        SELECT
+            ms.id,
+            ms.band_name,
+            ms.genre,
+            ps.track_count
+        FROM playlist_suggestions ps
+        JOIN music_suggestions ms ON ps.suggestion_id = ms.id
+        WHERE ps.playlist_id = ?
+        ORDER BY ps.created_at
+    ''', (playlist_id,))
+
+    bands = []
+    for row in cursor.fetchall():
+        bands.append({
+            'suggestion_id': row['id'],
+            'band_name': row['band_name'],
+            'genre': row['genre'],
+            'track_count': row['track_count']
+        })
+
+    playlist['bands'] = bands
+    conn.close()
+    return playlist
+
+def update_playlist_track_count(playlist_id, additional_tracks):
+    """
+    Update playlist track count when adding more tracks.
+
+    Args:
+        playlist_id: ID of the playlist
+        additional_tracks: Number of tracks to add to the count
+    """
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    cursor.execute('''
+        UPDATE user_playlists
+        SET track_count = track_count + ?,
+            band_count = (
+                SELECT COUNT(DISTINCT suggestion_id)
+                FROM playlist_suggestions
+                WHERE playlist_id = ?
+            )
+        WHERE id = ?
+    ''', (additional_tracks, playlist_id, playlist_id))
+
+    conn.commit()
+    conn.close()
 
 # Test function
 if __name__ == '__main__':
