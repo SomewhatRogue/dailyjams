@@ -309,6 +309,18 @@ DailyJams helps with music discovery based on current mood, time of day, and ins
 
 ### Medium Priority
 
+**History-Based Playlist Creation**
+- Allow users to access their history page (liked and/or skipped bands)
+- Add checkbox selection to history items
+- Enable "Add to Playlist" functionality from history
+- Provides more options beyond current recommendations
+- Users can build playlists from their entire feedback history
+- Implementation considerations:
+  - Add checkboxes to history page similar to main page
+  - Reuse existing playlist builder modal
+  - Filter by feedback type (liked/skipped/all)
+  - Track which bands are already in playlists (visual indicator)
+
 **Advanced Tempo Options**
 - Under "Advanced Options", add specific BPM range selector
 - Min BPM / Max BPM input fields
@@ -357,10 +369,35 @@ DailyJams helps with music discovery based on current mood, time of day, and ins
 
 ---
 
+---
+
+## Completed Features ✅
+
+**Spotify Playlist Generation** ✅ COMPLETE
+- Select multiple bands from recommendations
+- Create Spotify playlists directly from the app
+- Choose 1-5 tracks per artist
+- Add to existing playlists or create new ones
+- OAuth authentication with persistent sessions
+- Visual indicators for bands already in playlists
+- Randomized track order for variety
+
+**Sunny - AI Design Consultant** ✅ COMPLETE
+- Automated UX/UI design analysis for frontend code
+- Analyzes HTML, CSS, and JavaScript files
+- Provides actionable suggestions with code snippets
+- Prioritizes by impact and complexity
+- File change tracking to only analyze modified files
+- Learning system that respects rejected suggestions
+- Checkbox-based tracking system (`[ ]`, `[+]`, `[x]`, `[-]`, `[?]`)
+- Cost-optimized: only analyzes changed files, learns from rejections
+- Outputs to `DESIGN_SUGGESTIONS.md`
+- Run with: `python design_consultant.py` or `python design_consultant.py --full`
+
+---
+
 ## Future Enhancements (Long-term Vision)
 
-- Integration with Spotify/Apple Music APIs
-- Direct playlist creation from recommendations
 - Social sharing of recommendations
 - Community features (share your preferences/discoveries)
 - Advanced learning algorithms (ML-based recommendation engine)

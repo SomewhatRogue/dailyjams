@@ -45,4 +45,8 @@ data/*.db
 .DS_Store
 Thumbs.db
 
+# Spotify cache
+.spotify_cache
 
+# Design consultant history (tracks file changes)
+.design_history.json
