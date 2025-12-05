@@ -4,13 +4,16 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Profile & Settings - DailyJams</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Lora:wght@400;700&family=Roboto:wght@400;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/profile.css') }}">
 </head>
 <body>
     <div class="container">
         <header>
-            <h1>⚙️ Profile & Settings</h1>
+            <h1>Profile & Settings</h1>
             <p class="tagline">Customize your music discovery experience</p>
             <a href="/" class="btn-header-link">← Back to Recommendations</a>
         </header>
@@ -18,7 +21,7 @@
         <main>
             <!-- Add New Source Section -->
             <div class="settings-section">
-                <h2>➕ Add New Music Source</h2>
+                <h2>Add New Music Source</h2>
                 <p class="section-description">
                     Add custom sources for ChatGPT to research when finding music recommendations.
                 </p>
@@ -40,7 +43,7 @@
                     </div>
 
                     <button id="add-source-btn" class="btn-add-source">
-                        ➕ Add Source
+                        Add Source
                     </button>
                     <span id="add-status" class="add-status"></span>
                 </div>
@@ -48,9 +51,9 @@
 
             <!-- Music Sources Section -->
             <div class="settings-section">
-                <h2>🎵 Music Discovery Sources</h2>
+                <h2>Music Discovery Sources</h2>
                 <p class="section-description">
-                    Choose which sources ChatGPT should use when researching music recommendations. 
+                    Choose which sources ChatGPT should use when researching music recommendations.
                     Enabled sources will be used to find bands that match your preferences.
                 </p>
 
@@ -67,7 +70,7 @@
 
                 <div class="save-section">
                     <button id="save-btn" class="btn-save" disabled>
-                        💾 Save Changes
+                        Save Changes
                     </button>
                     <span id="save-status" class="save-status"></span>
                 </div>
@@ -75,7 +78,7 @@
         </main>
 
         <footer>
-            <p>Made with ❤️ for music lovers</p>
+            <p>made for those who want to discover | SomewhatRogue</p>
         </footer>
     </div>
 

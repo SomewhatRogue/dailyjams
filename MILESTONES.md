@@ -309,18 +309,6 @@ DailyJams helps with music discovery based on current mood, time of day, and ins
 
 ### Medium Priority
 
-**History-Based Playlist Creation**
-- Allow users to access their history page (liked and/or skipped bands)
-- Add checkbox selection to history items
-- Enable "Add to Playlist" functionality from history
-- Provides more options beyond current recommendations
-- Users can build playlists from their entire feedback history
-- Implementation considerations:
-  - Add checkboxes to history page similar to main page
-  - Reuse existing playlist builder modal
-  - Filter by feedback type (liked/skipped/all)
-  - Track which bands are already in playlists (visual indicator)
-
 **Advanced Tempo Options**
 - Under "Advanced Options", add specific BPM range selector
 - Min BPM / Max BPM input fields
@@ -382,6 +370,13 @@ DailyJams helps with music discovery based on current mood, time of day, and ins
 - Visual indicators for bands already in playlists
 - Randomized track order for variety
 
+**History Page Playlist Creation** ✅ COMPLETE
+- Create playlists from bands in your history
+- Full OAuth integration with proper page redirects
+- Restore selections after Spotify authentication
+- Same playlist builder modal as main page
+- Filter history and add to playlists
+
 **Sunny - AI Design Consultant** ✅ COMPLETE
 - Automated UX/UI design analysis for frontend code
 - Analyzes HTML, CSS, and JavaScript files
@@ -393,6 +388,29 @@ DailyJams helps with music discovery based on current mood, time of day, and ins
 - Cost-optimized: only analyzes changed files, learns from rejections
 - Outputs to `DESIGN_SUGGESTIONS.md`
 - Run with: `python design_consultant.py` or `python design_consultant.py --full`
+- Enhanced with WCAG AA accessibility requirements
+
+**Custom Genre Input** ✅ COMPLETE
+- Text input field for custom genres not in predefined list
+- Comma-separated genre support
+- Works alongside predefined genre checkboxes
+- Full integration with recommendation API
+
+**"Save for Later" Feedback Option** ✅ COMPLETE
+- New feedback option for bands you're interested in but unsure about
+- 🔖 Orange-themed button and badge
+- Separate filter on History page
+- Dedicated stat counter
+- Available on both main page and history page
+
+**Advanced History Filters** ✅ COMPLETE
+- Filter history by Time of Day (morning, afternoon, evening, night)
+- Filter by Tempo (1-5 scale)
+- Filter by Genre (text search)
+- Filter by Mood (text search)
+- Collapsible advanced filters section
+- Works in combination with feedback type and band name search
+- Apply and Clear buttons for easy management
 
 ---
 

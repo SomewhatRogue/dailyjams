@@ -5,36 +5,39 @@
 }
 
 body {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    font-family: 'Roboto', sans-serif;
+    background: linear-gradient(135deg, #ffffff 0%, #e3f2fd 100%);
     min-height: 100vh;
     padding: 20px;
 }
 
 .container {
-    max-width: 800px;
-    margin: 0 auto;
+    max-width: 900px;
+    margin: 40px auto;
     background: white;
-    border-radius: 20px;
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    border-radius: 10px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
     overflow: hidden;
 }
 
 header {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-    padding: 40px 30px;
+    background: #2c3e50;
+    color: #fafafa;
+    padding: 20px;
     text-align: center;
 }
 
 header h1 {
-    font-size: 3em;
+    font-family: 'Lora', serif;
+    font-size: 2.8em;
+    font-weight: 700;
     margin-bottom: 10px;
 }
 
 .tagline {
     font-size: 1.2em;
-    opacity: 0.9;
+    color: #fafafa;
+    opacity: 0.95;
 }
 
 .header-links {
@@ -48,32 +51,55 @@ header h1 {
 .btn-header-link {
     display: inline-block;
     padding: 10px 20px;
-    background: rgba(255, 255, 255, 0.2);
-    color: white;
+    background: #34495e;
+    color: #fafafa;
     text-decoration: none;
-    border-radius: 8px;
+    border-radius: 6px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
     transition: all 0.3s ease;
 }
 
 .btn-header-link:hover {
-    background: rgba(255, 255, 255, 0.3);
+    background: #2c3e50;
     transform: translateY(-2px);
 }
 
 main {
-    padding: 40px 30px;
+    padding: 30px;
 }
 
 .form-section {
-    margin-bottom: 30px;
+    margin-bottom: 40px;
 }
 
 .section-label {
     display: block;
-    font-size: 1.1em;
-    font-weight: 600;
+    font-size: 1.2em;
+    font-weight: bold;
+    margin-bottom: 10px;
+    color: #444;
+}
+
+p {
+    line-height: 1.6;
     margin-bottom: 15px;
-    color: #333;
+    color: #555;
+}
+
+/* Consistent Button Styling */
+button {
+    padding: 12px 24px;
+    background: #2980b9;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    transition: background 0.3s ease;
+    cursor: pointer;
+}
+
+button:hover {
+    background: #3498db;
 }
 
 /* Time of Day Buttons */
@@ -87,25 +113,25 @@ main {
 .btn-option {
     padding: 15px 10px;
     font-size: 1em;
-    border: 2px solid #e0e0e0;
-    background: white;
-    border-radius: 10px;
+    border: 1px solid #ccc;
+    background: #ddd;
+    color: #333;
+    border-radius: 6px;
     cursor: pointer;
-    transition: all 0.3s ease;
+    transition: background 0.3s;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
 }
 
 .btn-option:hover {
-    border-color: #667eea;
-    transform: translateY(-2px);
+    background: #666;
+    color: #fafafa;
 }
 
 .btn-option.active {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-    border-color: #667eea;
+    background: #444;
+    color: #fff;
 }
 
 /* Mood Input */
@@ -120,14 +146,14 @@ main {
 
 .text-input:focus {
     outline: none;
-    border-color: #667eea;
+    border-color: #2c3e50;
 }
 
 /* Genre Selection */
 .genres-grid {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 10px;
+    grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+    gap: 15px;
     margin-bottom: 10px;
 }
 
@@ -143,8 +169,8 @@ main {
 }
 
 .genre-checkbox:hover {
-    border-color: #667eea;
-    background: #f0f0ff;
+    border-color: #2c3e50;
+    background: #f0f0f0;
 }
 
 .genre-checkbox input[type="checkbox"] {
@@ -162,7 +188,7 @@ main {
 
 .genre-checkbox input[type="checkbox"]:checked + span {
     font-weight: 600;
-    color: #667eea;
+    color: #2c3e50;
 }
 
 .genre-note {
@@ -170,6 +196,20 @@ main {
     color: #888;
     font-style: italic;
     margin-top: 5px;
+}
+
+.custom-genre-section {
+    margin-top: 20px;
+    padding-top: 15px;
+    border-top: 1px solid #e0e0e0;
+}
+
+.custom-genre-label {
+    display: block;
+    font-size: 1em;
+    font-weight: 500;
+    margin-bottom: 8px;
+    color: #555;
 }
 
 /* Tempo Slider */
@@ -219,6 +259,7 @@ main {
     width: 100%;
     padding: 15px;
     font-size: 1em;
+    color: #333;
     background: #f5f5f5;
     border: 2px solid #e0e0e0;
     border-radius: 10px;
@@ -266,6 +307,7 @@ main {
 .instrument-name {
     font-size: 0.9em;
     font-weight: 500;
+    color: #333;
 }
 
 .toggle-btn {
@@ -299,23 +341,22 @@ main {
     font-size: 1.2em;
     font-weight: 600;
     color: white;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: #2980b9;
     border: none;
-    border-radius: 10px;
+    border-radius: 6px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
     cursor: pointer;
-    transition: all 0.3s ease;
+    transition: background 0.3s ease;
     margin-top: 20px;
 }
 
 .btn-submit:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 10px 20px rgba(102, 126, 234, 0.4);
+    background: #3498db;
 }
 
 .btn-submit:disabled {
     opacity: 0.6;
     cursor: not-allowed;
-    transform: none;
 }
 
 /* Loading Spinner */
@@ -326,7 +367,7 @@ main {
 
 .spinner {
     border: 4px solid #f3f3f3;
-    border-top: 4px solid #667eea;
+    border-top: 4px solid #2980b9;
     border-radius: 50%;
     width: 50px;
     height: 50px;
@@ -362,7 +403,7 @@ main {
     border-radius: 15px;
     padding: 25px;
     margin-bottom: 20px;
-    border-left: 5px solid #667eea;
+    border-left: 5px solid #2980b9;
     transition: all 0.3s ease;
 }
 
@@ -379,7 +420,7 @@ main {
 }
 
 .genre {
-    color: #667eea;
+    color: #2980b9;
     font-weight: 600;
     margin-bottom: 12px;
 }
@@ -426,7 +467,8 @@ main {
     flex: 1;
     padding: 10px;
     border: 2px solid #e0e0e0;
-    background: white;
+    background: #f5f5f5;
+    color: #333;
     border-radius: 8px;
     cursor: pointer;
     font-size: 1em;
@@ -444,13 +486,19 @@ main {
 }
 
 .btn-feedback.skip {
-    background: #f5f5f5;
+    background: #e8e8e8;
 }
 
 .btn-feedback.skip:hover {
     background: #9e9e9e;
     color: white;
     border-color: #9e9e9e;
+}
+
+.btn-feedback.save-later:hover {
+    background: #ff9800;
+    color: white;
+    border-color: #ff9800;
 }
 
 .btn-feedback.thumbs-down:hover {
@@ -481,7 +529,7 @@ footer {
 }
 
 .section-label input[type="checkbox"] {
-    accent-color: #667eea;
+    accent-color: #2980b9;
 }
 
 .trending-note {
@@ -576,7 +624,7 @@ footer {
     display: inline-flex;
     align-items: center;
     padding: 6px 12px;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: #2980b9;
     color: white;
     border-radius: 15px;
     font-size: 0.85em;
@@ -590,21 +638,20 @@ footer {
     bottom: 30px;
     right: 30px;
     padding: 18px 32px;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: #2980b9;
     color: white;
     border: none;
     border-radius: 50px;
     font-size: 1.1em;
     font-weight: 600;
     cursor: pointer;
-    box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
-    transition: all 0.3s ease;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    transition: background 0.3s ease;
     z-index: 1000;
 }
 
 .btn-create-playlist:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 15px 40px rgba(102, 126, 234, 0.5);
+    background: #3498db;
 }
 
 /* Playlist Modal */
@@ -637,7 +684,7 @@ footer {
     justify-content: space-between;
     align-items: center;
     padding: 25px 30px;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: #2c3e50;
     color: white;
     border-radius: 20px 20px 0 0;
 }
@@ -693,7 +740,7 @@ footer {
 
 .playlist-name-section input:focus {
     outline: none;
-    border-color: #667eea;
+    border-color: #2980b9;
 }
 
 .playlist-option-section {
@@ -839,13 +886,12 @@ footer {
 }
 
 .btn-create-playlist-final {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: #2980b9;
     color: white;
 }
 
 .btn-create-playlist-final:hover:not(:disabled) {
-    transform: translateY(-2px);
-    box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+    background: #3498db;
 }
 
 .btn-create-playlist-final:disabled {

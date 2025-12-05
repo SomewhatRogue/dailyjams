@@ -137,6 +137,13 @@ function initializeForm() {
         genreCheckboxes.forEach(checkbox => {
             selectedGenres.push(checkbox.value);
         });
+
+        // Add custom genres from text input
+        const customGenresInput = document.getElementById('custom-genres').value.trim();
+        if (customGenresInput) {
+            const customGenres = customGenresInput.split(',').map(g => g.trim()).filter(g => g.length > 0);
+            selectedGenres.push(...customGenres);
+        }
         
         const trendingNow = document.getElementById('trending-now').checked;
         const discoverNew = document.getElementById('discover-new').checked;
@@ -236,6 +243,7 @@ function displayRecommendations(recommendations) {
 
         cardHTML += '<div class="feedback-buttons">';
         cardHTML += '<button class="btn-feedback thumbs-up" data-id="' + rec.id + '" data-type="positive">👍 Love it</button>';
+        cardHTML += '<button class="btn-feedback save-later" data-id="' + rec.id + '" data-type="save_later">🔖 Save for Later</button>';
         cardHTML += '<button class="btn-feedback skip" data-id="' + rec.id + '" data-type="skipped">⏭️ Skip</button>';
         cardHTML += '<button class="btn-feedback thumbs-down" data-id="' + rec.id + '" data-type="negative">👎 Not for me</button>';
         cardHTML += '</div>';
@@ -295,6 +303,8 @@ function initializeFeedbackButtons() {
                         this.textContent = '👎 Saved!';
                     } else if (feedbackType === 'skipped') {
                         this.textContent = '⏭️ Saved!';
+                    } else if (feedbackType === 'save_later') {
+                        this.textContent = '🔖 Saved!';
                     }
                     
                     // Reset text after 2 seconds
@@ -470,7 +480,8 @@ async function initiateSpotifyAuth() {
         const selectedItems = Array.from(selectedForPlaylist);
         sessionStorage.setItem('pendingPlaylistSelection', JSON.stringify(selectedItems));
 
-        const response = await fetch('/api/spotify/login');
+        // Pass the current page so OAuth can redirect back here
+        const response = await fetch('/api/spotify/login?return_page=/');
         const data = await response.json();
 
         if (data.success) {

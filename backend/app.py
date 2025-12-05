@@ -307,6 +307,10 @@ def delete_source_route():
 def spotify_login():
     """Initiate Spotify OAuth flow."""
     try:
+        # Get the return page from query parameters (default to home page)
+        return_page = request.args.get('return_page', '/')
+        session['spotify_oauth_return_page'] = return_page
+
         sp_oauth = get_spotify_oauth()
         auth_url = sp_oauth.get_authorize_url()
         return jsonify({
@@ -331,13 +335,19 @@ def spotify_callback():
             token_info = sp_oauth.get_access_token(code)
             session['spotify_token'] = token_info
 
-            # Redirect to main page with success message
-            return redirect('/?spotify=connected')
+            # Redirect back to the page where OAuth was initiated
+            redirect_page = session.get('spotify_oauth_return_page', '/')
+            session.pop('spotify_oauth_return_page', None)  # Clean up
+            return redirect(f'{redirect_page}?spotify=connected')
         else:
-            return redirect('/?spotify=error')
+            redirect_page = session.get('spotify_oauth_return_page', '/')
+            session.pop('spotify_oauth_return_page', None)
+            return redirect(f'{redirect_page}?spotify=error')
     except Exception as e:
         print(f"Error in /api/spotify/callback: {str(e)}")
-        return redirect('/?spotify=error')
+        redirect_page = session.get('spotify_oauth_return_page', '/')
+        session.pop('spotify_oauth_return_page', None)
+        return redirect(f'{redirect_page}?spotify=error')
 
 @app.route('/api/spotify/status')
 def spotify_status():

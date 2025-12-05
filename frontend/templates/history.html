@@ -4,13 +4,16 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>My Music History - DailyJams</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Lora:wght@400;700&family=Roboto:wght@400;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/history.css') }}">
 </head>
 <body>
     <div class="container">
         <header>
-            <h1>🎵 My Music History</h1>
+            <h1>My Music History</h1>
             <p class="tagline">Your past ratings and discoveries</p>
             <a href="/" class="btn-header-link">← Back to Recommendations</a>
         </header>
@@ -20,13 +23,62 @@
             <div class="filters-section">
                 <div class="filter-buttons">
                     <button class="filter-btn active" data-filter="all">All</button>
-                    <button class="filter-btn" data-filter="positive">👍 Loved</button>
-                    <button class="filter-btn" data-filter="skipped">⏭️ Skipped</button>
-                    <button class="filter-btn" data-filter="negative">👎 Not For Me</button>
+                    <button class="filter-btn" data-filter="positive">Loved</button>
+                    <button class="filter-btn" data-filter="save_later">Saved for Later</button>
+                    <button class="filter-btn" data-filter="skipped">Skipped</button>
+                    <button class="filter-btn" data-filter="negative">Not For Me</button>
                 </div>
-                
+
                 <div class="search-box">
                     <input type="text" id="search-input" placeholder="Search by band name..." class="search-input">
+                </div>
+
+                <!-- Advanced Filters Toggle -->
+                <div class="advanced-filters-toggle">
+                    <button id="toggle-advanced-filters" class="btn-toggle-advanced">⚙️ Advanced Filters</button>
+                </div>
+
+                <!-- Advanced Filters -->
+                <div id="advanced-filters" class="advanced-filters advanced-filters-hidden">
+                    <div class="advanced-filter-row">
+                        <div class="filter-group">
+                            <label>Time of Day:</label>
+                            <select id="filter-time" class="filter-select">
+                                <option value="">All</option>
+                                <option value="morning">Morning</option>
+                                <option value="afternoon">Afternoon</option>
+                                <option value="evening">Evening</option>
+                                <option value="night">Night</option>
+                            </select>
+                        </div>
+
+                        <div class="filter-group">
+                            <label>Tempo:</label>
+                            <select id="filter-tempo" class="filter-select">
+                                <option value="">All</option>
+                                <option value="1">Very Slow (1)</option>
+                                <option value="2">Slow (2)</option>
+                                <option value="3">Moderate (3)</option>
+                                <option value="4">Upbeat (4)</option>
+                                <option value="5">Very Fast (5)</option>
+                            </select>
+                        </div>
+
+                        <div class="filter-group">
+                            <label>Genre:</label>
+                            <input type="text" id="filter-genre" class="filter-input" placeholder="e.g., jazz, rock...">
+                        </div>
+
+                        <div class="filter-group">
+                            <label>Mood:</label>
+                            <input type="text" id="filter-mood" class="filter-input" placeholder="e.g., energetic, calm...">
+                        </div>
+                    </div>
+
+                    <div class="filter-actions">
+                        <button id="apply-filters" class="btn-apply-filters">Apply Filters</button>
+                        <button id="clear-filters" class="btn-clear-filters">Clear All</button>
+                    </div>
                 </div>
             </div>
 
@@ -39,6 +91,10 @@
                 <div class="stat-card">
                     <div class="stat-number" id="loved-count">0</div>
                     <div class="stat-label">Loved</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="saved-later-count">0</div>
+                    <div class="stat-label">Saved for Later</div>
                 </div>
                 <div class="stat-card">
                     <div class="stat-number" id="skipped-count">0</div>
@@ -66,7 +122,7 @@
         </main>
 
         <footer>
-            <p>Made with ❤️ for music lovers</p>
+            <p>made for those who want to discover | SomewhatRogue</p>
         </footer>
     </div>
 
