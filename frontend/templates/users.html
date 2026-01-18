@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DailyJams - Choose Profile</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Lora:wght@400;700&family=Roboto:wght@400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>DailyJams</h1>
+            <p class="tagline">Who's listening?</p>
+        </header>
+
+        <main>
+            <div id="users-grid" class="users-grid">
+                <!-- User cards will be loaded here -->
+            </div>
+
+            <!-- Add User Modal -->
+            <div id="add-user-modal" class="modal hidden">
+                <div class="modal-content">
+                    <h3>Create New Profile</h3>
+                    <form id="add-user-form">
+                        <div class="form-group">
+                            <label for="new-user-name">Name</label>
+                            <input type="text" id="new-user-name" placeholder="Enter name" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Choose a color</label>
+                            <div class="color-picker">
+                                <button type="button" class="color-btn selected" data-color="#2980b9" style="background: #2980b9;"></button>
+                                <button type="button" class="color-btn" data-color="#27ae60" style="background: #27ae60;"></button>
+                                <button type="button" class="color-btn" data-color="#e74c3c" style="background: #e74c3c;"></button>
+                                <button type="button" class="color-btn" data-color="#9b59b6" style="background: #9b59b6;"></button>
+                                <button type="button" class="color-btn" data-color="#f39c12" style="background: #f39c12;"></button>
+                                <button type="button" class="color-btn" data-color="#1abc9c" style="background: #1abc9c;"></button>
+                                <button type="button" class="color-btn" data-color="#e91e63" style="background: #e91e63;"></button>
+                                <button type="button" class="color-btn" data-color="#607d8b" style="background: #607d8b;"></button>
+                            </div>
+                        </div>
+                        <div class="modal-buttons">
+                            <button type="button" id="cancel-add-user" class="btn-secondary">Cancel</button>
+                            <button type="submit" class="btn-submit">Create</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Delete Confirmation Modal -->
+            <div id="delete-modal" class="modal hidden">
+                <div class="modal-content">
+                    <h3>Delete Profile?</h3>
+                    <p>This will permanently delete <strong id="delete-user-name"></strong> and all their history.</p>
+                    <div class="modal-buttons">
+                        <button type="button" id="cancel-delete" class="btn-secondary">Cancel</button>
+                        <button type="button" id="confirm-delete" class="btn-danger">Delete</button>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <footer>
+            <p>made for those who want to discover | <a href="https://github.com/somewhatROgue" target="_blank">SomewhatRogue</a> | Inspired by <a href="https://github.com/k4therin2" target="_blank">Katherine</a></p>
+        </footer>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/users.js') }}"></script>
+</body>
+</html>

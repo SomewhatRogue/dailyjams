@@ -9,8 +9,20 @@ import re
 # Load environment variables
 load_dotenv()
 
-# Initialize OpenAI client
-client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
+# Discovery levels for the day/night slider (1=day/pure discovery, 5=night/comfort zone)
+DISCOVERY_LEVELS = {
+    1: {'exclude_known': 'all', 'label': 'Pure Discovery'},      # Exclude ALL known artists
+    2: {'exclude_known': 50, 'label': 'Mostly New'},             # Exclude top 50 known
+    3: {'exclude_known': 20, 'label': 'Balanced'},               # Exclude top 20 known
+    4: {'exclude_known': 10, 'label': 'Familiar Mix'},           # Only exclude top 10
+    5: {'exclude_known': 0, 'include_known': True, 'label': 'Comfort Zone'},  # Actively suggest from known
+}
+
+# Initialize OpenAI client (using US regional endpoint for business API key)
+client = OpenAI(
+    api_key=os.getenv('OPENAI_API_KEY'),
+    base_url="https://us.api.openai.com/v1"
+)
 
 def scrape_reddit_music(genre=None):
     """Scrape trending posts from Reddit r/Music"""
@@ -76,22 +88,79 @@ def search_trending_music(genres=None):
     else:
         return "Focus on popular artists from 2024-2025 based on your training data."
 
-def get_music_recommendations(time_of_day, mood, tempo, instruments_yes, instruments_no, sources, excluded_bands=None, genres=None, trending_now=False, discover_new=False):
+def get_user_taste_context(user_id):
+    """
+    Build taste context from user's synced Spotify data.
+
+    Returns dict with known_artists, top_genres, artist_count or None if no data.
+    """
+    from database import get_taste_data
+
+    taste = get_taste_data(user_id)
+    if not taste:
+        return None
+
+    known_artists = set()
+    favorite_genres = {}
+
+    # Process each data type
+    for data_type, data in taste.items():
+        if not data:
+            continue
+
+        # Handle both dict (top_artists with time ranges) and list (followed/saved)
+        if isinstance(data, dict):
+            # top_artists has time_ranges as keys
+            for time_range, artists in data.items():
+                if isinstance(artists, list):
+                    for artist in artists:
+                        known_artists.add(artist.get('name', ''))
+                        for genre in artist.get('genres', []):
+                            favorite_genres[genre] = favorite_genres.get(genre, 0) + 1
+        elif isinstance(data, list):
+            # followed_artists, saved_tracks
+            for artist in data:
+                known_artists.add(artist.get('name', ''))
+                for genre in artist.get('genres', []):
+                    favorite_genres[genre] = favorite_genres.get(genre, 0) + 1
+
+    # Remove empty strings
+    known_artists.discard('')
+
+    # Sort genres by frequency
+    top_genres = sorted(favorite_genres.items(), key=lambda x: -x[1])[:10]
+
+    return {
+        'known_artists': list(known_artists),
+        'top_genres': [g[0] for g in top_genres],
+        'artist_count': len(known_artists)
+    }
+
+
+def get_music_recommendations(time_of_day, mood, tempo, instruments_yes, instruments_no, sources, excluded_bands=None, genres=None, trending_now=False, discover_new=False, interest=None, user_id=None, discovery_level=3, user_set_genres=False):
     """
     Get music recommendations from ChatGPT based on user preferences.
     """
-    
+
     # Store trending bands for display
     trending_bands_list = []
-    
-    # Build the prompt
-    prompt = f"""You are a music discovery assistant. Based on the user's preferences, recommend 5 bands or artists that match their criteria.
+
+    # Build the prompt with only filled-in preferences
+    prompt = """You are a music discovery assistant. Based on the user's preferences, recommend 5 bands or artists that match their criteria.
 
 USER PREFERENCES:
-- Time of Day: {time_of_day}
-- Mood: {mood}
-- Tempo: {tempo*20}/100 (0=very slow, 100=very fast)
 """
+
+    if time_of_day:
+        prompt += f"- Time of Day: {time_of_day}\n"
+
+    if mood:
+        prompt += f"- Desired Mood/Feeling: {mood}\n"
+
+    if interest:
+        prompt += f"- Current Interest/Context: {interest}\n"
+
+    prompt += f"- Tempo: {tempo*20}/100 (0=very slow, 100=very fast)\n"
     
     if instruments_yes:
         prompt += f"- Instruments that SHOULD be present: {', '.join(instruments_yes)}\n"
@@ -103,7 +172,44 @@ USER PREFERENCES:
         prompt += f"- Genres: {', '.join(genres)}\n"
     else:
         prompt += "- Genres: Any genre is fine\n"
-    
+
+    # Initialize excluded_bands if None
+    if excluded_bands is None:
+        excluded_bands = []
+    else:
+        excluded_bands = list(excluded_bands)  # Make a copy to avoid modifying original
+
+    # Get Spotify taste context if user_id provided
+    taste_context = None
+    if user_id:
+        taste_context = get_user_taste_context(user_id)
+
+    if taste_context:
+        # Apply discovery level logic
+        level_config = DISCOVERY_LEVELS.get(discovery_level, DISCOVERY_LEVELS[3])
+        exclude_limit = level_config.get('exclude_known', 20)
+        include_known = level_config.get('include_known', False)
+
+        # Add taste context to prompt if user didn't explicitly set genres
+        if not user_set_genres and taste_context['top_genres']:
+            prompt += f"\nUSER'S SPOTIFY LISTENING PREFERENCES (use as hints, not strict rules):\n"
+            prompt += f"- Their top genres based on listening history: {', '.join(taste_context['top_genres'][:5])}\n"
+            prompt += f"- They already know {taste_context['artist_count']} artists\n"
+
+        # Handle exclusions based on discovery level
+        if exclude_limit == 'all':
+            # Pure discovery - exclude ALL known artists
+            excluded_bands.extend(taste_context['known_artists'])
+            prompt += f"\nDISCOVERY MODE: Pure Discovery - recommend artists they've likely never heard of.\n"
+        elif exclude_limit > 0:
+            # Partial exclusion - exclude top N known artists
+            excluded_bands.extend(taste_context['known_artists'][:exclude_limit])
+            prompt += f"\nDISCOVERY MODE: {level_config['label']} - mix of new discoveries with some they might know.\n"
+        elif include_known:
+            # Comfort zone - actively suggest from known artists
+            prompt += f"\nCOMFORT MODE: The user wants familiar music. Consider these artists they love: {', '.join(taste_context['known_artists'][:15])}\n"
+            prompt += "Feel free to suggest artists they already know and love, plus similar ones.\n"
+
     # Add trending research if enabled
     if trending_now:
         trending_info = search_trending_music(genres)
@@ -145,13 +251,13 @@ Return 5 recommendations. Make sure the response is ONLY valid JSON, no other te
     try:
         # Call ChatGPT API
         response = client.chat.completions.create(
-            model="gpt-3.5-turbo",
+            model="gpt-5.1",
             messages=[
                 {"role": "system", "content": "You are a helpful music discovery assistant. You only respond with valid JSON."},
                 {"role": "user", "content": prompt}
             ],
             temperature=0.7,
-            max_tokens=1000
+            max_completion_tokens=1000
         )
         
         # Extract the response text

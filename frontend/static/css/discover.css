@@ -1,0 +1,153 @@
+/* ===================================
+   DISCOVER PAGE - Additional Styles
+   =================================== */
+
+/* Discover-specific header adjustments */
+.discover-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--space-md);
+}
+
+.discover-header h1 {
+    margin-bottom: 0;
+}
+
+.btn-change-mood {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-sm);
+    padding: var(--space-md) var(--space-lg);
+    background: rgba(251, 191, 36, 0.2);
+    color: var(--star-gold);
+    text-decoration: none;
+    border-radius: var(--radius-pill);
+    font-size: 1em;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    border: 2px solid rgba(251, 191, 36, 0.3);
+}
+
+.btn-change-mood:hover {
+    background: rgba(251, 191, 36, 0.3);
+    border-color: var(--star-gold);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-glow);
+}
+
+.btn-change-mood svg {
+    width: 20px;
+    height: 20px;
+}
+
+/* Warning banner for missing artists */
+.warning-banner {
+    background: rgba(251, 146, 60, 0.15);
+    border: 1px solid rgba(251, 146, 60, 0.4);
+    border-radius: var(--radius-md);
+    padding: var(--space-md);
+    margin-bottom: var(--space-lg);
+    color: #fdba74;
+    font-size: 0.9em;
+}
+
+.warning-banner strong {
+    display: block;
+    margin-bottom: var(--space-xs);
+    color: #fb923c;
+}
+
+/* No preferences message */
+.no-preferences {
+    text-align: center;
+    padding: var(--space-2xl);
+}
+
+.no-preferences h2 {
+    font-family: var(--font-heading);
+    font-size: 1.8em;
+    color: var(--star-bright);
+    margin-bottom: var(--space-md);
+}
+
+.no-preferences p {
+    color: var(--text-muted);
+    margin-bottom: var(--space-xl);
+}
+
+.btn-go-home {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-sm);
+    padding: var(--space-md) var(--space-xl);
+    background: linear-gradient(135deg, var(--star-gold) 0%, var(--star-bright) 100%);
+    color: var(--text-dark);
+    text-decoration: none;
+    border-radius: var(--radius-pill);
+    font-size: 1.1em;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    box-shadow: var(--shadow-glow);
+}
+
+.btn-go-home:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-glow-strong);
+}
+
+/* Quick playlist button - appears after first swipe right */
+.quick-playlist-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-xs);
+    padding: var(--space-sm) var(--space-md);
+    background: rgba(251, 191, 36, 0.2);
+    border: 1px solid rgba(251, 191, 36, 0.4);
+    border-radius: var(--radius-pill);
+    color: var(--star-gold);
+    font-size: 0.85em;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    opacity: 0;
+    transform: translateY(-5px);
+    pointer-events: none;
+}
+
+.quick-playlist-btn.visible {
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
+}
+
+.quick-playlist-btn:hover {
+    background: rgba(251, 191, 36, 0.3);
+    border-color: var(--star-gold);
+    transform: translateY(-2px);
+}
+
+.quick-playlist-btn svg {
+    width: 16px;
+    height: 16px;
+}
+
+.quick-playlist-hint {
+    font-size: 0.75em;
+    color: var(--text-muted);
+    margin-left: var(--space-sm);
+    font-weight: 400;
+}
+
+/* Responsive */
+@media (max-width: 600px) {
+    .discover-header {
+        flex-direction: column;
+        text-align: center;
+    }
+
+    .discover-header h1 {
+        font-size: 2em;
+    }
+}

@@ -6,20 +6,65 @@ let spotifyAuthenticated = false;
 
 // Initialize when page loads
 document.addEventListener('DOMContentLoaded', function() {
+    loadCurrentUser(); // Load and display current user in header
     initializeTimeButtons();
     initializeInstrumentToggles();
     initializeTempoSlider();
-    initializeAdvancedToggle();
+    initializeDiscoverySlider(); // Day/Night discovery slider
+    initializeCollapsibleSections(); // New collapsible UI
     initializeForm();
     restoreRecommendations(); // Restore recommendations from previous session
     checkSpotifyAuth(); // Check if user is authenticated with Spotify
     restorePlaylistSelections(); // Restore playlist selections after OAuth
 });
 
-// Time of Day Button Selection
+// Load and display current user in header
+async function loadCurrentUser() {
+    try {
+        const response = await fetch('/api/users/current');
+        const data = await response.json();
+
+        if (data.success && data.user) {
+            const avatar = document.getElementById('header-avatar');
+            const username = document.getElementById('header-username');
+
+            if (avatar && username) {
+                avatar.textContent = data.user.name.charAt(0).toUpperCase();
+                avatar.style.backgroundColor = data.user.avatar_color;
+                username.textContent = data.user.name;
+            }
+        }
+    } catch (error) {
+        console.error('Error loading current user:', error);
+    }
+}
+
+// Collapsible Sections (NEW for redesign)
+function initializeCollapsibleSections() {
+    const headers = document.querySelectorAll('.collapsible-header');
+
+    headers.forEach(header => {
+        header.addEventListener('click', function() {
+            const sectionId = this.getAttribute('data-section');
+            const content = document.getElementById('section-' + sectionId);
+            const isActive = this.classList.contains('active');
+
+            // Toggle active state
+            if (isActive) {
+                this.classList.remove('active');
+                content.classList.remove('active');
+            } else {
+                this.classList.add('active');
+                content.classList.add('active');
+            }
+        });
+    });
+}
+
+// Time of Day Button Selection (Updated for pill style)
 function initializeTimeButtons() {
-    const timeButtons = document.querySelectorAll('.btn-option');
-    
+    const timeButtons = document.querySelectorAll('.pill[data-time]');
+
     timeButtons.forEach(button => {
         button.addEventListener('click', function() {
             timeButtons.forEach(btn => btn.classList.remove('active'));
@@ -82,48 +127,161 @@ function initializeTempoSlider() {
     display.textContent = tempoLabels[slider.value];
 }
 
-// Advanced Options Toggle
-function initializeAdvancedToggle() {
-    const toggleBtn = document.getElementById('toggle-advanced');
-    const advancedOptions = document.getElementById('advanced-options');
-    
-    toggleBtn.addEventListener('click', function() {
-        if (advancedOptions.classList.contains('advanced-hidden')) {
-            advancedOptions.classList.remove('advanced-hidden');
-            advancedOptions.classList.add('advanced-visible');
-            this.textContent = '⚙️ Hide Advanced Options';
-        } else {
-            advancedOptions.classList.remove('advanced-visible');
-            advancedOptions.classList.add('advanced-hidden');
-            this.textContent = '⚙️ Advanced Options (Instruments)';
+// Discovery Arc Slider (Half-Moon Design)
+function initializeDiscoverySlider() {
+    const arc = document.getElementById('discovery-arc');
+    const thumb = document.getElementById('arc-thumb');
+    const slider = document.getElementById('discovery-level');
+    const label = document.getElementById('discovery-label');
+    const description = document.getElementById('discovery-description');
+    const stars = document.getElementById('arc-stars');
+    const fill = document.getElementById('arc-fill');
+    const track = document.querySelector('.arc-track');
+
+    // Check if elements exist (might not be on discover.html)
+    if (!arc || !thumb || !slider) return;
+
+    const discoveryLevels = {
+        1: { label: 'Pure Discovery', desc: 'Only artists you\'ve never heard of' },
+        2: { label: 'Mostly New', desc: 'Mostly new with occasional familiar vibes' },
+        3: { label: 'Balanced', desc: 'Mix of new discoveries with some familiar' },
+        4: { label: 'Familiar Mix', desc: 'Lean into your taste with some new finds' },
+        5: { label: 'Comfort Zone', desc: 'Artists you already love and similar ones' }
+    };
+
+    // Position thumb along the arc based on value (1-5)
+    function updateArc(value) {
+        const level = discoveryLevels[value];
+        const percent = (value - 1) / 4; // 0 to 1
+
+        // Calculate position on semicircle arc
+        // Arc goes from left (0) to right (1), with the curve at top
+        const angle = Math.PI * (1 - percent); // PI to 0 (left to right)
+        const trackRect = track.getBoundingClientRect();
+        const radius = trackRect.width / 2;
+        const centerX = radius;
+        const centerY = trackRect.height; // Bottom of track
+
+        const x = centerX + radius * Math.cos(angle);
+        const y = centerY - radius * Math.sin(angle);
+
+        // Position the thumb
+        thumb.style.left = `${x}px`;
+        thumb.style.bottom = `${trackRect.height - y}px`;
+
+        // Update labels
+        if (label) label.textContent = level.label;
+        if (description) description.textContent = level.desc;
+
+        // Update hidden input
+        slider.value = value;
+
+        // Update arc data attribute for CSS
+        arc.setAttribute('data-level', value);
+
+        // Update fill gradient
+        if (fill) {
+            fill.style.setProperty('--fill-percent', `${percent * 100}%`);
         }
+
+        // Show stars on night side (levels 4 and 5)
+        if (stars) {
+            if (parseInt(value) >= 4) {
+                stars.classList.add('visible');
+            } else {
+                stars.classList.remove('visible');
+            }
+        }
+
+        // Update thumb color for night mode
+        if (parseInt(value) >= 4) {
+            thumb.classList.add('night-mode');
+        } else {
+            thumb.classList.remove('night-mode');
+        }
+    }
+
+    // Make thumb draggable along arc
+    let isDragging = false;
+
+    function getValueFromPosition(clientX) {
+        const trackRect = track.getBoundingClientRect();
+        const relativeX = clientX - trackRect.left;
+        const percent = Math.max(0, Math.min(1, relativeX / trackRect.width));
+        return Math.round(percent * 4) + 1; // 1 to 5
+    }
+
+    thumb.addEventListener('mousedown', (e) => {
+        isDragging = true;
+        e.preventDefault();
+    });
+
+    document.addEventListener('mousemove', (e) => {
+        if (!isDragging) return;
+        const value = getValueFromPosition(e.clientX);
+        updateArc(value);
+    });
+
+    document.addEventListener('mouseup', () => {
+        isDragging = false;
+    });
+
+    // Touch support
+    thumb.addEventListener('touchstart', (e) => {
+        isDragging = true;
+        e.preventDefault();
+    });
+
+    document.addEventListener('touchmove', (e) => {
+        if (!isDragging) return;
+        const touch = e.touches[0];
+        const value = getValueFromPosition(touch.clientX);
+        updateArc(value);
+    });
+
+    document.addEventListener('touchend', () => {
+        isDragging = false;
+    });
+
+    // Click on track to set position
+    track.addEventListener('click', (e) => {
+        const value = getValueFromPosition(e.clientX);
+        updateArc(value);
+    });
+
+    // Initialize with current value
+    updateArc(parseInt(slider.value));
+
+    // Re-position on window resize
+    window.addEventListener('resize', () => {
+        updateArc(parseInt(slider.value));
     });
 }
 
-// Form Submission
+// Advanced Options Toggle - NO LONGER NEEDED (using collapsible sections now)
+// function removed in favor of initializeCollapsibleSections()
+
+// Form Submission - Redirects to /discover page
 function initializeForm() {
     const form = document.getElementById('preferences-form');
-    
-    form.addEventListener('submit', async function(e) {
+
+    form.addEventListener('submit', function(e) {
         e.preventDefault();
-        
+
         const timeOfDay = document.getElementById('time-of-day').value;
         const mood = document.getElementById('mood').value;
+        const interest = document.getElementById('interest').value;
         const tempo = document.getElementById('tempo').value;
-        
-        if (!timeOfDay) {
-            alert('Please select a time of day');
+
+        // At least one context field should be filled
+        if (!timeOfDay && !mood.trim() && !interest.trim()) {
+            alert('Please fill in at least one field (time of day, mood, or interest)');
             return;
         }
-        
-        if (!mood.trim()) {
-            alert('Please enter a mood');
-            return;
-        }
-        
+
         const instrumentsYes = [];
         const instrumentsNo = [];
-        
+
         for (const instrument in instrumentPreferences) {
             if (instrumentPreferences[instrument] === 'yes') {
                 instrumentsYes.push(instrument);
@@ -131,7 +289,7 @@ function initializeForm() {
                 instrumentsNo.push(instrument);
             }
         }
-        
+
         const selectedGenres = [];
         const genreCheckboxes = document.querySelectorAll('input[name="genre"]:checked');
         genreCheckboxes.forEach(checkbox => {
@@ -144,47 +302,30 @@ function initializeForm() {
             const customGenres = customGenresInput.split(',').map(g => g.trim()).filter(g => g.length > 0);
             selectedGenres.push(...customGenres);
         }
-        
+
         const trendingNow = document.getElementById('trending-now').checked;
-        const discoverNew = document.getElementById('discover-new').checked;
-        
+        const discoveryLevel = parseInt(document.getElementById('discovery-level').value);
+
         const requestData = {
             time_of_day: timeOfDay,
             mood: mood,
+            interest: interest,
             tempo: parseInt(tempo),
             instruments_yes: instrumentsYes,
             instruments_no: instrumentsNo,
             genres: selectedGenres,
             trending_now: trendingNow,
-            discover_new: discoverNew
+            discover_new: discoveryLevel <= 2,  // Pure Discovery or Mostly New
+            discovery_level: discoveryLevel,
+            excluded_artists: []
         };
-        
-        // Clear old recommendations when submitting new search
+
+        // Store preferences in sessionStorage and redirect to discover page
+        sessionStorage.setItem('discoverPreferences', JSON.stringify(requestData));
         sessionStorage.removeItem('lastRecommendations');
-        
-        showLoading();
-        
-        try {
-            const response = await fetch('/api/recommend', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(requestData)
-            });
-            
-            const data = await response.json();
-            
-            if (data.success) {
-                displayRecommendations(data.recommendations);
-            } else {
-                alert('Error getting recommendations: ' + data.error);
-                hideLoading();
-            }
-        } catch (error) {
-            alert('Error: ' + error.message);
-            hideLoading();
-        }
+
+        // Redirect to discover page
+        window.location.href = '/discover';
     });
 }
 
@@ -216,37 +357,49 @@ function displayRecommendations(recommendations) {
         
         const sourcesUsed = rec.sources_used || '';
         const spotifySearchUrl = 'https://open.spotify.com/search/' + encodeURIComponent(rec.band_name);
-        
-        let cardHTML = '<div class="band-name">' + rec.band_name + '</div>';
+
+        let cardHTML = '';
+
+        // Add artist image if available
+        if (rec.image_url) {
+            cardHTML += '<div class="artist-image-container">';
+            cardHTML += '<img src="' + rec.image_url + '" alt="' + rec.band_name + '" class="artist-image">';
+            cardHTML += '</div>';
+        }
+
+        // Wrap content in a container for flexbox layout
+        cardHTML += '<div class="recommendation-card-content">';
+        cardHTML += '<div class="band-name">' + rec.band_name + '</div>';
         cardHTML += '<div class="genre">' + (rec.genre || 'Various Genres') + '</div>';
         cardHTML += '<div class="description">' + rec.description + '</div>';
         cardHTML += '<div class="match-reason">Why this matches: ' + rec.match_reason + '</div>';
-        
+
         if (rec.trending_enabled) {
-            cardHTML += '<div class="trending-used">🔥 Trending Now - Based on ' + rec.trending_count + ' currently popular artists from Reddit</div>';
+            cardHTML += '<div class="trending-used"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"></path></svg> Trending Now - Based on ' + rec.trending_count + ' currently popular artists from Reddit</div>';
         }
-        
+
         if (sourcesUsed) {
-            cardHTML += '<div class="sources-used">📚 Sources: ' + sourcesUsed + '</div>';
+            cardHTML += '<div class="sources-used"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg> Sources: ' + sourcesUsed + '</div>';
         }
-        
+
         cardHTML += '<div class="spotify-link-container">';
-        cardHTML += '<a href="' + spotifySearchUrl + '" target="_blank" class="btn-spotify">🎧 Listen on Spotify</a>';
+        cardHTML += '<a href="' + spotifySearchUrl + '" target="_blank" class="btn-spotify"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 18v-6a9 9 0 0 1 18 0v6"></path><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"></path></svg> Listen on Spotify</a>';
         cardHTML += '<label class="playlist-checkbox-label">';
         cardHTML += '<input type="checkbox" class="playlist-checkbox" data-id="' + rec.id + '" data-band-name="' + rec.band_name + '">';
         cardHTML += '<span>Add to Playlist</span>';
         cardHTML += '</label>';
         if (rec.in_playlist) {
-            cardHTML += '<span class="in-playlist-badge">✓ In Playlist</span>';
+            cardHTML += '<span class="in-playlist-badge"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> In Playlist</span>';
         }
         cardHTML += '</div>';
 
         cardHTML += '<div class="feedback-buttons">';
-        cardHTML += '<button class="btn-feedback thumbs-up" data-id="' + rec.id + '" data-type="positive">👍 Love it</button>';
-        cardHTML += '<button class="btn-feedback save-later" data-id="' + rec.id + '" data-type="save_later">🔖 Save for Later</button>';
-        cardHTML += '<button class="btn-feedback skip" data-id="' + rec.id + '" data-type="skipped">⏭️ Skip</button>';
-        cardHTML += '<button class="btn-feedback thumbs-down" data-id="' + rec.id + '" data-type="negative">👎 Not for me</button>';
+        cardHTML += '<button class="btn-feedback thumbs-up" data-id="' + rec.id + '" data-type="positive"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 10v12"></path><path d="M15 5.88 14 10h5.83a2 2 0 0 1 1.92 2.56l-2.33 8A2 2 0 0 1 17.5 22H4a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h2.76a2 2 0 0 0 1.79-1.11L12 2h0a3.13 3.13 0 0 1 3 3.88Z"></path></svg> Love it</button>';
+        cardHTML += '<button class="btn-feedback save-later" data-id="' + rec.id + '" data-type="save_later"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"></path></svg> Save for Later</button>';
+        cardHTML += '<button class="btn-feedback skip" data-id="' + rec.id + '" data-type="skipped"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 4 15 12 5 20 5 4"></polygon><line x1="19" y1="5" x2="19" y2="19"></line></svg> Skip</button>';
+        cardHTML += '<button class="btn-feedback thumbs-down" data-id="' + rec.id + '" data-type="negative"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 14V2"></path><path d="M9 18.12 10 14H4.17a2 2 0 0 1-1.92-2.56l2.33-8A2 2 0 0 1 6.5 2H20a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-2.76a2 2 0 0 0-1.79 1.11L12 22h0a3.13 3.13 0 0 1-3-3.88Z"></path></svg> Not for me</button>';
         cardHTML += '</div>';
+        cardHTML += '</div>'; // Close recommendation-card-content
 
         card.innerHTML = cardHTML;
         container.appendChild(card);

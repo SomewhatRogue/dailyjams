@@ -11,13 +11,17 @@ from database import (
     get_all_sources, update_source_preference, add_new_source, delete_source,
     get_all_rated_bands, save_playlist, link_playlist_to_suggestions,
     get_all_playlists, get_playlist_with_details, update_playlist_track_count,
-    get_bands_in_playlists
+    get_bands_in_playlists, migrate_add_user_support, migrate_add_spotify_support,
+    ensure_default_user, create_user, get_all_users, get_user_by_id, delete_user,
+    get_user_count, save_spotify_auth, get_spotify_auth, update_spotify_token,
+    clear_spotify_auth, save_taste_data, get_taste_data, get_taste_sync_status
 )
 from api_handler import get_music_recommendations
 from spotify_handler import (
     get_spotify_oauth, get_spotify_client, get_current_user,
     get_tracks_for_artists, create_playlist, add_tracks_to_playlist,
-    get_user_playlists as get_spotify_user_playlists
+    get_user_playlists as get_spotify_user_playlists, get_artist_images,
+    get_spotify_client_for_user, sync_all_taste_data
 )
 
 app = Flask(__name__,
@@ -31,11 +35,165 @@ app.secret_key = os.getenv('FLASK_SECRET_KEY', 'dev-secret-key-change-in-product
 with app.app_context():
     initialize_database()
     insert_default_sources()
+    migrate_add_user_support()
+    migrate_add_spotify_support()
+    ensure_default_user()
+
+def get_current_user_id():
+    """Get the current user ID from session, defaulting to 1."""
+    return session.get('current_user_id', 1)
 
 @app.route('/')
 def index():
     """Render the main page."""
     return render_template('index.html')
+
+# User Profile Routes
+
+@app.route('/users')
+def users_page():
+    """Render the user selection page."""
+    return render_template('users.html')
+
+@app.route('/api/users', methods=['GET'])
+def list_users():
+    """Get all user profiles."""
+    try:
+        users = get_all_users()
+        return jsonify({
+            'success': True,
+            'users': users
+        })
+    except Exception as e:
+        print(f"Error in GET /api/users: {str(e)}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@app.route('/api/users', methods=['POST'])
+def add_user():
+    """Create a new user profile."""
+    try:
+        data = request.json
+        name = data.get('name', '').strip()
+        avatar_color = data.get('avatar_color', '#2980b9')
+
+        if not name:
+            return jsonify({
+                'success': False,
+                'error': 'Name is required'
+            }), 400
+
+        user_id = create_user(name, avatar_color)
+
+        if user_id is None:
+            return jsonify({
+                'success': False,
+                'error': 'A user with that name already exists'
+            }), 400
+
+        return jsonify({
+            'success': True,
+            'user_id': user_id,
+            'message': f'User "{name}" created!'
+        })
+    except Exception as e:
+        print(f"Error in POST /api/users: {str(e)}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@app.route('/api/users/<int:user_id>', methods=['DELETE'])
+def remove_user(user_id):
+    """Delete a user profile."""
+    try:
+        # Don't allow deleting current user while logged in as them
+        if get_current_user_id() == user_id:
+            # Switch to another user first
+            users = get_all_users()
+            other_user = next((u for u in users if u['id'] != user_id), None)
+            if other_user:
+                session['current_user_id'] = other_user['id']
+
+        success = delete_user(user_id)
+
+        if not success:
+            return jsonify({
+                'success': False,
+                'error': 'Cannot delete the last user'
+            }), 400
+
+        return jsonify({
+            'success': True,
+            'message': 'User deleted'
+        })
+    except Exception as e:
+        print(f"Error in DELETE /api/users/{user_id}: {str(e)}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@app.route('/api/users/current', methods=['GET'])
+def current_user():
+    """Get the currently active user."""
+    try:
+        user_id = get_current_user_id()
+        user = get_user_by_id(user_id)
+
+        if not user:
+            # Fallback to first user if current doesn't exist
+            users = get_all_users()
+            if users:
+                user = users[0]
+                session['current_user_id'] = user['id']
+
+        return jsonify({
+            'success': True,
+            'user': user
+        })
+    except Exception as e:
+        print(f"Error in GET /api/users/current: {str(e)}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@app.route('/api/users/switch', methods=['POST'])
+def switch_user():
+    """Switch to a different user profile."""
+    try:
+        data = request.json
+        user_id = data.get('user_id')
+
+        if not user_id:
+            return jsonify({
+                'success': False,
+                'error': 'User ID is required'
+            }), 400
+
+        user = get_user_by_id(user_id)
+        if not user:
+            return jsonify({
+                'success': False,
+                'error': 'User not found'
+            }), 404
+
+        session['current_user_id'] = user_id
+
+        return jsonify({
+            'success': True,
+            'user': user,
+            'message': f'Switched to {user["name"]}'
+        })
+    except Exception as e:
+        print(f"Error in POST /api/users/switch: {str(e)}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
 
 @app.route('/api/recommend', methods=['POST'])
 def recommend():
@@ -46,23 +204,35 @@ def recommend():
         
         time_of_day = data.get('time_of_day', '')
         mood = data.get('mood', '')
+        interest = data.get('interest', '')
         tempo = data.get('tempo', 50)
         instruments_yes = data.get('instruments_yes', [])
         instruments_no = data.get('instruments_no', [])
         genres = data.get('genres', [])
         trending_now = data.get('trending_now', False)
         discover_new = data.get('discover_new', False)
-        
+        discovery_level = data.get('discovery_level', 3)  # 1=pure discovery, 5=comfort zone
+        excluded_artists = data.get('excluded_artists', [])  # Session-based exclusions from swipe UI
+
+        # Check if user explicitly set genres (for taste context override logic)
+        user_set_genres = len(genres) > 0
+
+        # Get current user
+        user_id = get_current_user_id()
+
         # Get enabled sources
         sources = get_enabled_sources()
-        
-        # Get excluded bands
+
+        # Get excluded bands for this user
         if discover_new:
             # Exclude ALL previously rated bands
-            excluded_bands = get_all_rated_bands()
+            excluded_bands = get_all_rated_bands(user_id)
         else:
             # Only exclude recently skipped bands (5-day cooldown)
-            excluded_bands = get_excluded_bands()
+            excluded_bands = get_excluded_bands(user_id)
+
+        # Merge session exclusions (from swipe UI) with database exclusions
+        excluded_bands = list(set(excluded_bands + excluded_artists))
         
         # Get list of source names for tracking
         source_names = [s['source_name'] for s in sources]
@@ -78,11 +248,23 @@ def recommend():
             excluded_bands=excluded_bands,
             genres=genres,
             trending_now=trending_now,
-            discover_new=discover_new
+            discover_new=discover_new,
+            interest=interest,
+            user_id=user_id,
+            discovery_level=discovery_level,
+            user_set_genres=user_set_genres
         )
-        
-        # Get bands already in playlists
-        bands_in_playlists = get_bands_in_playlists()
+
+        # Fetch artist images from Spotify
+        band_names = [rec['band_name'] for rec in recommendations]
+        artist_images = get_artist_images(band_names)
+
+        # Add images to recommendations
+        for rec in recommendations:
+            rec['image_url'] = artist_images.get(rec['band_name'])
+
+        # Get bands already in playlists for this user
+        bands_in_playlists = get_bands_in_playlists(user_id)
 
         # Save each recommendation to database
         saved_recommendations = []
@@ -92,7 +274,8 @@ def recommend():
                 genre=rec.get('genre', ''),
                 description=rec.get('description', ''),
                 match_reason=rec.get('match_reason', ''),
-                sources_used=source_names
+                sources_used=source_names,
+                user_id=user_id
             )
 
             # Save the preferences that generated this suggestion
@@ -130,17 +313,17 @@ def feedback():
     """Save user feedback on a suggestion."""
     try:
         data = request.json
-        print(f"🔍 DEBUG: Received feedback request: {data}") 
         suggestion_id = data.get('suggestion_id')
         feedback_type = data.get('feedback_type')
-        
+
         if not suggestion_id or not feedback_type:
             return jsonify({
                 'success': False,
                 'error': 'Missing required fields'
             }), 400
-        
-        save_feedback(suggestion_id, feedback_type)
+
+        user_id = get_current_user_id()
+        save_feedback(suggestion_id, feedback_type, user_id)
         
         return jsonify({
             'success': True,
@@ -170,6 +353,11 @@ def sources():
             'error': str(e)
         }), 500
 
+@app.route('/discover')
+def discover_page():
+    """Render the swipe discovery page."""
+    return render_template('discover.html')
+
 @app.route('/history')
 def history_page():
     """Render the history page."""
@@ -179,7 +367,8 @@ def history_page():
 def get_history():
     """Get user's feedback history."""
     try:
-        history = get_full_feedback_history()
+        user_id = get_current_user_id()
+        history = get_full_feedback_history(user_id)
         return jsonify({
             'success': True,
             'history': history
@@ -190,6 +379,58 @@ def get_history():
             'success': False,
             'error': str(e)
         }), 500
+
+@app.route('/history-demo')
+def history_demo_page():
+    """Render the history page with demo data (for design testing)."""
+    return render_template('history-demo.html')
+
+@app.route('/api/history-demo', methods=['GET'])
+def get_history_demo():
+    """Get demo history data for design testing."""
+    demo_history = [
+        {
+            'id': 1, 'band_name': 'Khruangbin', 'genre': 'Psychedelic Soul, Funk',
+            'description': 'A Houston-based trio known for their global music influences, blending funk, soul, and psychedelia with Thai and Middle Eastern sounds.',
+            'match_reason': 'Perfect for late night vibes with their hypnotic grooves',
+            'feedback_type': 'positive', 'time_of_day': 'night', 'mood': 'relaxed, dreamy',
+            'tempo': 3, 'instruments_yes': 'guitar,bass', 'instruments_no': '',
+            'created_at': '2025-01-15T22:30:00'
+        },
+        {
+            'id': 2, 'band_name': 'Japanese Breakfast', 'genre': 'Indie Pop, Dream Pop',
+            'description': 'Michelle Zauner\'s project blending shoegaze textures with catchy pop melodies and deeply personal lyrics.',
+            'match_reason': 'Matches your afternoon energy with uplifting yet introspective tones',
+            'feedback_type': 'positive', 'time_of_day': 'afternoon', 'mood': 'reflective',
+            'tempo': 4, 'instruments_yes': 'synth', 'instruments_no': '',
+            'created_at': '2025-01-14T15:20:00'
+        },
+        {
+            'id': 3, 'band_name': 'King Gizzard & The Lizard Wizard', 'genre': 'Psychedelic Rock, Garage Rock',
+            'description': 'Prolific Australian band exploring everything from thrash metal to microtonal music.',
+            'match_reason': 'High energy for your upbeat morning request',
+            'feedback_type': 'skipped', 'time_of_day': 'morning', 'mood': 'energetic',
+            'tempo': 5, 'instruments_yes': '', 'instruments_no': 'electronic',
+            'created_at': '2025-01-13T09:15:00'
+        },
+        {
+            'id': 4, 'band_name': 'Floating Points', 'genre': 'Electronic, Ambient',
+            'description': 'Sam Shepherd creates expansive electronic soundscapes that blend jazz, classical, and ambient textures.',
+            'match_reason': 'Deep listening for your contemplative evening mood',
+            'feedback_type': 'save_later', 'time_of_day': 'evening', 'mood': 'contemplative',
+            'tempo': 2, 'instruments_yes': 'piano,synth', 'instruments_no': '',
+            'created_at': '2025-01-12T19:45:00'
+        },
+        {
+            'id': 5, 'band_name': 'Car Seat Headrest', 'genre': 'Indie Rock, Lo-fi',
+            'description': 'Will Toledo\'s emotionally raw songwriting with fuzzy guitars and anthemic hooks.',
+            'match_reason': 'Matches your afternoon energy request',
+            'feedback_type': 'negative', 'time_of_day': 'afternoon', 'mood': 'angsty',
+            'tempo': 4, 'instruments_yes': 'guitar', 'instruments_no': '',
+            'created_at': '2025-01-11T14:30:00'
+        }
+    ]
+    return jsonify({'success': True, 'history': demo_history})
 
 @app.route('/profile')
 def profile_page():
@@ -326,14 +567,29 @@ def spotify_login():
 
 @app.route('/api/spotify/callback')
 def spotify_callback():
-    """Handle Spotify OAuth callback."""
+    """Handle Spotify OAuth callback - saves tokens per DailyJams user."""
     try:
         sp_oauth = get_spotify_oauth()
         code = request.args.get('code')
 
         if code:
             token_info = sp_oauth.get_access_token(code)
+
+            # Keep in session for backwards compatibility
             session['spotify_token'] = token_info
+
+            # Get Spotify user info
+            import spotipy
+            sp = spotipy.Spotify(auth=token_info['access_token'])
+            spotify_user = sp.me()
+            spotify_user_info = {
+                'id': spotify_user['id'],
+                'display_name': spotify_user.get('display_name', spotify_user['id'])
+            }
+
+            # Save to database per DailyJams user
+            user_id = get_current_user_id()
+            save_spotify_auth(user_id, token_info, spotify_user_info)
 
             # Redirect back to the page where OAuth was initiated
             redirect_page = session.get('spotify_oauth_return_page', '/')
@@ -351,8 +607,27 @@ def spotify_callback():
 
 @app.route('/api/spotify/status')
 def spotify_status():
-    """Check if user is authenticated with Spotify."""
+    """Check if current DailyJams user is connected to Spotify."""
     try:
+        user_id = get_current_user_id()
+
+        # Check per-user connection from database
+        auth_data = get_spotify_auth(user_id)
+        if auth_data and auth_data.get('spotify_user_id'):
+            # Get sync status too
+            sync_status = get_taste_sync_status(user_id)
+            return jsonify({
+                'success': True,
+                'authenticated': True,
+                'connected': True,
+                'spotify_user_id': auth_data['spotify_user_id'],
+                'spotify_display_name': auth_data['spotify_display_name'],
+                'connected_at': auth_data.get('spotify_connected_at'),
+                'taste_synced': sync_status is not None,
+                'last_sync': sync_status
+            })
+
+        # Fallback: check legacy file-based auth
         sp = get_spotify_client()
         if sp:
             user = get_current_user(sp)
@@ -360,15 +635,158 @@ def spotify_status():
                 return jsonify({
                     'success': True,
                     'authenticated': True,
-                    'user': user
+                    'connected': False,  # Has legacy auth but not per-user
+                    'user': user,
+                    'message': 'Connected via legacy auth. Re-connect to link to your profile.'
                 })
 
         return jsonify({
             'success': True,
-            'authenticated': False
+            'authenticated': False,
+            'connected': False
         })
     except Exception as e:
         print(f"Error in /api/spotify/status: {str(e)}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@app.route('/api/spotify/disconnect', methods=['POST'])
+def spotify_disconnect():
+    """Disconnect current user's Spotify account."""
+    try:
+        user_id = get_current_user_id()
+        clear_spotify_auth(user_id)
+
+        return jsonify({
+            'success': True,
+            'message': 'Spotify disconnected'
+        })
+    except Exception as e:
+        print(f"Error in /api/spotify/disconnect: {str(e)}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+
+@app.route('/api/spotify/sync', methods=['POST'])
+def spotify_sync_taste():
+    """Sync current user's Spotify taste data (top artists, followed artists, saved tracks)."""
+    try:
+        user_id = get_current_user_id()
+
+        # Verify user is connected
+        auth_data = get_spotify_auth(user_id)
+        if not auth_data or not auth_data.get('spotify_user_id'):
+            return jsonify({
+                'success': False,
+                'error': 'Not connected to Spotify'
+            }), 401
+
+        # Sync all taste data
+        result = sync_all_taste_data(user_id)
+
+        if result['success']:
+            return jsonify({
+                'success': True,
+                'message': 'Taste data synced successfully',
+                'synced': result['synced']
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'error': result.get('error', 'Failed to sync taste data')
+            }), 500
+
+    except Exception as e:
+        print(f"Error in /api/spotify/sync: {str(e)}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+
+@app.route('/api/spotify/taste', methods=['GET'])
+def get_spotify_taste():
+    """Get current user's synced Spotify taste data."""
+    try:
+        user_id = get_current_user_id()
+        taste_data = get_taste_data(user_id)
+
+        if taste_data:
+            return jsonify({
+                'success': True,
+                'taste_data': taste_data
+            })
+        else:
+            return jsonify({
+                'success': True,
+                'taste_data': None,
+                'message': 'No taste data synced yet'
+            })
+    except Exception as e:
+        print(f"Error in /api/spotify/taste: {str(e)}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+
+@app.route('/api/spotify/test-previews')
+def test_preview_urls():
+    """Test if Spotify preview URLs are available for this app."""
+    try:
+        sp = get_spotify_client()
+        if not sp:
+            return jsonify({
+                'success': False,
+                'authenticated': False,
+                'error': 'Not authenticated with Spotify. Please connect first at /api/spotify/login'
+            })
+
+        # Test with a well-known artist (Radiohead - should have tracks)
+        from spotify_handler import search_artist, get_artist_top_tracks
+
+        test_artists = ['Radiohead', 'Taylor Swift', 'Kendrick Lamar']
+        results = []
+
+        for artist_name in test_artists:
+            artist = search_artist(artist_name, sp)
+            if artist:
+                tracks = get_artist_top_tracks(artist['id'], limit=3, sp=sp)
+                track_results = []
+                for track in tracks:
+                    track_results.append({
+                        'name': track['name'],
+                        'preview_url': track.get('preview_url'),
+                        'has_preview': track.get('preview_url') is not None
+                    })
+                results.append({
+                    'artist': artist_name,
+                    'image_url': artist.get('image_url'),
+                    'tracks': track_results,
+                    'previews_available': sum(1 for t in track_results if t['has_preview'])
+                })
+
+        total_tracks = sum(len(r['tracks']) for r in results)
+        total_previews = sum(r['previews_available'] for r in results)
+
+        return jsonify({
+            'success': True,
+            'authenticated': True,
+            'summary': {
+                'total_tracks_checked': total_tracks,
+                'tracks_with_previews': total_previews,
+                'preview_rate': f"{(total_previews/total_tracks)*100:.0f}%" if total_tracks > 0 else "0%",
+                'previews_working': total_previews > 0
+            },
+            'details': results
+        })
+
+    except Exception as e:
+        print(f"Error in /api/spotify/test-previews: {str(e)}")
         return jsonify({
             'success': False,
             'error': str(e)
@@ -522,7 +940,8 @@ def create_spotify_playlist():
                 spotify_playlist_id=spotify_playlist['id'],
                 spotify_url=spotify_playlist['url'],
                 band_count=len(selected_tracks),
-                track_count=len(all_track_uris)
+                track_count=len(all_track_uris),
+                user_id=get_current_user_id()
             )
 
             # Link suggestions to playlist
@@ -546,7 +965,8 @@ def create_spotify_playlist():
 def get_playlists():
     """Get all user's DailyJams playlists."""
     try:
-        playlists = get_all_playlists()
+        user_id = get_current_user_id()
+        playlists = get_all_playlists(user_id)
         return jsonify({
             'success': True,
             'playlists': playlists

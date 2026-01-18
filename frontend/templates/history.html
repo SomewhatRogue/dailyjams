@@ -15,7 +15,14 @@
         <header>
             <h1>My Music History</h1>
             <p class="tagline">Your past ratings and discoveries</p>
-            <a href="/" class="btn-header-link">← Back to Recommendations</a>
+            <div class="header-links">
+                <div class="current-user-indicator">
+                    <span class="user-avatar-small" id="header-avatar">?</span>
+                    <span class="user-name-display" id="header-username">Loading...</span>
+                </div>
+                <a href="/users" class="btn-header-link">Switch User</a>
+                <a href="/" class="btn-header-link">Back to Recommendations</a>
+            </div>
         </header>
 
         <main>
@@ -122,7 +129,7 @@
         </main>
 
         <footer>
-            <p>made for those who want to discover | SomewhatRogue</p>
+            <p>made for those who want to discover | <a href="https://github.com/somewhatROgue" target="_blank">SomewhatRogue</a> | Inspired by <a href="https://github.com/k4therin2" target="_blank">Katherine</a></p>
         </footer>
     </div>
 

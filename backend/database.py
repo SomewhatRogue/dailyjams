@@ -15,7 +15,17 @@ def initialize_database():
     """Create all necessary tables if they don't exist."""
     conn = get_db_connection()
     cursor = conn.cursor()
-    
+
+    # Table 0: Users (profiles for separating history)
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS users (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL UNIQUE,
+            avatar_color TEXT DEFAULT '#2980b9',
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    ''')
+
     # Table 1: Music Suggestions
     # Stores each band/artist suggestion from ChatGPT
     cursor.execute('''
@@ -128,25 +138,228 @@ def insert_default_sources():
     conn.close()
     print("✅ Default sources added!")
 
+def migrate_add_spotify_support():
+    """Migration: Add Spotify auth columns to users table and create taste_data table."""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    # Check if migration is needed
+    cursor.execute("PRAGMA table_info(users)")
+    columns = [col[1] for col in cursor.fetchall()]
+
+    if 'spotify_user_id' not in columns:
+        print("🔄 Running Spotify support migration...")
+
+        # Add Spotify auth columns to users table
+        cursor.execute('ALTER TABLE users ADD COLUMN spotify_user_id TEXT')
+        cursor.execute('ALTER TABLE users ADD COLUMN spotify_display_name TEXT')
+        cursor.execute('ALTER TABLE users ADD COLUMN spotify_access_token TEXT')
+        cursor.execute('ALTER TABLE users ADD COLUMN spotify_refresh_token TEXT')
+        cursor.execute('ALTER TABLE users ADD COLUMN spotify_token_expires_at INTEGER')
+        cursor.execute('ALTER TABLE users ADD COLUMN spotify_connected_at TIMESTAMP')
+
+        print("✅ Added Spotify auth columns to users table")
+
+    # Create taste data table if it doesn't exist
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS spotify_taste_data (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL,
+            data_type TEXT NOT NULL,
+            time_range TEXT,
+            data TEXT NOT NULL,
+            synced_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (user_id) REFERENCES users (id)
+        )
+    ''')
+
+    # Create index for faster lookups
+    cursor.execute('''
+        CREATE INDEX IF NOT EXISTS idx_taste_data_user
+        ON spotify_taste_data (user_id, data_type)
+    ''')
+
+    conn.commit()
+    conn.close()
+    print("✅ Spotify support migration complete!")
+
+def migrate_add_user_support():
+    """Migration: Add user_id columns and create default user."""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    # Check if migration is needed by seeing if user_id column exists
+    cursor.execute("PRAGMA table_info(music_suggestions)")
+    columns = [col[1] for col in cursor.fetchall()]
+
+    if 'user_id' in columns:
+        conn.close()
+        return  # Already migrated
+
+    print("🔄 Running user support migration...")
+
+    # Create default user if none exists
+    cursor.execute("SELECT id FROM users LIMIT 1")
+    if not cursor.fetchone():
+        cursor.execute('''
+            INSERT INTO users (name, avatar_color) VALUES ('Default', '#2980b9')
+        ''')
+        print("✅ Created default user")
+
+    # Get default user ID
+    cursor.execute("SELECT id FROM users WHERE name = 'Default'")
+    row = cursor.fetchone()
+    default_user_id = row[0] if row else 1
+
+    # Add user_id to music_suggestions
+    cursor.execute('''
+        ALTER TABLE music_suggestions ADD COLUMN user_id INTEGER DEFAULT 1
+    ''')
+    cursor.execute('''
+        UPDATE music_suggestions SET user_id = ? WHERE user_id IS NULL OR user_id = 1
+    ''', (default_user_id,))
+
+    # Add user_id to user_feedback
+    cursor.execute('''
+        ALTER TABLE user_feedback ADD COLUMN user_id INTEGER DEFAULT 1
+    ''')
+    cursor.execute('''
+        UPDATE user_feedback SET user_id = ? WHERE user_id IS NULL OR user_id = 1
+    ''', (default_user_id,))
+
+    # Add user_id to user_playlists
+    cursor.execute('''
+        ALTER TABLE user_playlists ADD COLUMN user_id INTEGER DEFAULT 1
+    ''')
+    cursor.execute('''
+        UPDATE user_playlists SET user_id = ? WHERE user_id IS NULL OR user_id = 1
+    ''', (default_user_id,))
+
+    conn.commit()
+    conn.close()
+    print("✅ User support migration complete!")
+
+# User CRUD Functions
+
+def create_user(name, avatar_color='#2980b9'):
+    """Create a new user profile."""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    try:
+        cursor.execute('''
+            INSERT INTO users (name, avatar_color) VALUES (?, ?)
+        ''', (name, avatar_color))
+        user_id = cursor.lastrowid
+        conn.commit()
+        conn.close()
+        return user_id
+    except sqlite3.IntegrityError:
+        conn.close()
+        return None  # Name already exists
+
+def get_all_users():
+    """Get all user profiles."""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    cursor.execute('''
+        SELECT id, name, avatar_color, created_at FROM users ORDER BY created_at
+    ''')
+
+    users = [dict(row) for row in cursor.fetchall()]
+    conn.close()
+    return users
+
+def get_user_by_id(user_id):
+    """Get a specific user by ID."""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    cursor.execute('''
+        SELECT id, name, avatar_color, created_at FROM users WHERE id = ?
+    ''', (user_id,))
+
+    row = cursor.fetchone()
+    conn.close()
+    return dict(row) if row else None
+
+def delete_user(user_id):
+    """Delete a user and all their data."""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    # Check if this is the last user
+    cursor.execute("SELECT COUNT(*) FROM users")
+    count = cursor.fetchone()[0]
+    if count <= 1:
+        conn.close()
+        return False  # Can't delete last user
+
+    # Delete user's feedback
+    cursor.execute('DELETE FROM user_feedback WHERE user_id = ?', (user_id,))
+
+    # Delete user's playlist links first (junction table)
+    cursor.execute('''
+        DELETE FROM playlist_suggestions
+        WHERE playlist_id IN (SELECT id FROM user_playlists WHERE user_id = ?)
+    ''', (user_id,))
+
+    # Delete user's playlists
+    cursor.execute('DELETE FROM user_playlists WHERE user_id = ?', (user_id,))
+
+    # Delete user's suggestions
+    cursor.execute('DELETE FROM music_suggestions WHERE user_id = ?', (user_id,))
+
+    # Delete the user
+    cursor.execute('DELETE FROM users WHERE id = ?', (user_id,))
+
+    conn.commit()
+    conn.close()
+    return True
+
+def get_user_count():
+    """Get total number of users."""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT COUNT(*) FROM users")
+    count = cursor.fetchone()[0]
+    conn.close()
+    return count
+
+def ensure_default_user():
+    """Ensure at least one user exists, create Default if not."""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT id FROM users LIMIT 1")
+    if not cursor.fetchone():
+        cursor.execute('''
+            INSERT INTO users (name, avatar_color) VALUES ('Default', '#2980b9')
+        ''')
+        conn.commit()
+
+    conn.close()
+
 # CRUD Functions for Music Suggestions
 
-def save_suggestion(band_name, genre=None, description=None, match_reason=None, sources_used=None):
+def save_suggestion(band_name, genre=None, description=None, match_reason=None, sources_used=None, user_id=1):
     """Save a music suggestion to the database."""
     conn = get_db_connection()
     cursor = conn.cursor()
-    
+
     # Convert sources list to comma-separated string
     sources_str = ','.join(sources_used) if sources_used else ''
-    
+
     cursor.execute('''
-        INSERT INTO music_suggestions (band_name, genre, description, match_reason, sources_used)
-        VALUES (?, ?, ?, ?, ?)
-    ''', (band_name, genre, description, match_reason, sources_str))
-    
+        INSERT INTO music_suggestions (band_name, genre, description, match_reason, sources_used, user_id)
+        VALUES (?, ?, ?, ?, ?, ?)
+    ''', (band_name, genre, description, match_reason, sources_str, user_id))
+
     suggestion_id = cursor.lastrowid
     conn.commit()
     conn.close()
-    
+
     return suggestion_id
 
 def save_user_preferences(suggestion_id, time_of_day, mood, tempo, instruments_yes, instruments_no):
@@ -166,43 +379,35 @@ def save_user_preferences(suggestion_id, time_of_day, mood, tempo, instruments_y
     conn.commit()
     conn.close()
 
-def save_feedback(suggestion_id, feedback_type):
+def save_feedback(suggestion_id, feedback_type, user_id=1):
     """Save or update user feedback (positive/negative/skipped) for a suggestion."""
-    print(f"🔍 DEBUG save_feedback: suggestion_id={suggestion_id}, feedback_type={feedback_type}")
-    
     conn = get_db_connection()
     cursor = conn.cursor()
-    
-    # Check if feedback already exists for this suggestion
+
+    # Check if feedback already exists for this suggestion and user
     cursor.execute('''
         SELECT id FROM user_feedback
-        WHERE suggestion_id = ?
-    ''', (suggestion_id,))
-    
+        WHERE suggestion_id = ? AND user_id = ?
+    ''', (suggestion_id, user_id))
+
     existing = cursor.fetchone()
-    
+
     if existing:
         # Update existing feedback
         cursor.execute('''
             UPDATE user_feedback
             SET feedback_type = ?, created_at = CURRENT_TIMESTAMP
-            WHERE suggestion_id = ?
-        ''', (feedback_type, suggestion_id))
-        print(f"🔍 DEBUG: Updated existing feedback")
+            WHERE suggestion_id = ? AND user_id = ?
+        ''', (feedback_type, suggestion_id, user_id))
     else:
         # Insert new feedback
         cursor.execute('''
-            INSERT INTO user_feedback (suggestion_id, feedback_type)
-            VALUES (?, ?)
-        ''', (suggestion_id, feedback_type))
-        print(f"🔍 DEBUG: Inserted new feedback")
-    
-    print(f"🔍 DEBUG: Rows affected: {cursor.rowcount}")
-    
+            INSERT INTO user_feedback (suggestion_id, feedback_type, user_id)
+            VALUES (?, ?, ?)
+        ''', (suggestion_id, feedback_type, user_id))
+
     conn.commit()
     conn.close()
-    
-    print(f"🔍 DEBUG: Feedback saved successfully!")
 def get_enabled_sources():
     """Get all enabled music discovery sources."""
     conn = get_db_connection()
@@ -249,13 +454,13 @@ def update_source_preference(source_id, is_enabled):
     conn.commit()
     conn.close()
 
-def get_user_feedback_history():
+def get_user_feedback_history(user_id=1):
     """Get all feedback with associated preferences for learning."""
     conn = get_db_connection()
     cursor = conn.cursor()
-    
+
     cursor.execute('''
-        SELECT 
+        SELECT
             ms.band_name,
             up.mood,
             up.tempo,
@@ -266,43 +471,45 @@ def get_user_feedback_history():
         FROM user_feedback uf
         JOIN music_suggestions ms ON uf.suggestion_id = ms.id
         JOIN user_preferences up ON ms.id = up.suggestion_id
+        WHERE uf.user_id = ?
         ORDER BY uf.created_at DESC
-    ''')
-    
+    ''', (user_id,))
+
     history = cursor.fetchall()
     conn.close()
-    
+
     return [dict(row) for row in history]
 
-def get_recently_skipped_bands(days=5):
-    """Get bands that were skipped in the last X days."""
+def get_recently_skipped_bands(user_id=1, days=5):
+    """Get bands that were skipped in the last X days for a user."""
     conn = get_db_connection()
     cursor = conn.cursor()
-    
+
     cursor.execute('''
         SELECT DISTINCT ms.band_name
         FROM user_feedback uf
         JOIN music_suggestions ms ON uf.suggestion_id = ms.id
         WHERE uf.feedback_type = 'skipped'
+        AND uf.user_id = ?
         AND uf.created_at >= datetime('now', '-' || ? || ' days')
-    ''', (days,))
-    
+    ''', (user_id, days))
+
     skipped = cursor.fetchall()
     conn.close()
-    
+
     return [row['band_name'] for row in skipped]
 
-def get_excluded_bands():
+def get_excluded_bands(user_id=1):
     """Get all bands to exclude from recommendations (recently skipped)."""
-    return get_recently_skipped_bands(days=5)
+    return get_recently_skipped_bands(user_id=user_id, days=5)
 
-def get_full_feedback_history():
+def get_full_feedback_history(user_id=1):
     """Get complete feedback history with all details for the history page."""
     conn = get_db_connection()
     cursor = conn.cursor()
-    
+
     cursor.execute('''
-        SELECT 
+        SELECT
             ms.id,
             ms.band_name,
             ms.genre,
@@ -319,12 +526,13 @@ def get_full_feedback_history():
         FROM user_feedback uf
         JOIN music_suggestions ms ON uf.suggestion_id = ms.id
         LEFT JOIN user_preferences up ON ms.id = up.suggestion_id
+        WHERE uf.user_id = ?
         ORDER BY uf.created_at DESC
-    ''')
-    
+    ''', (user_id,))
+
     history = cursor.fetchall()
     conn.close()
-    
+
     return [dict(row) for row in history]
 
 def add_new_source(source_name, source_url, description, is_enabled=1):
@@ -359,7 +567,7 @@ def delete_source(source_id):
     conn.commit()
     conn.close()
 
-def get_all_rated_bands():
+def get_all_rated_bands(user_id=1):
     """Get all bands that the user has rated (positive, negative, or skipped)."""
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -368,15 +576,16 @@ def get_all_rated_bands():
         SELECT DISTINCT ms.band_name
         FROM user_feedback uf
         JOIN music_suggestions ms ON uf.suggestion_id = ms.id
-    ''')
+        WHERE uf.user_id = ?
+    ''', (user_id,))
 
     rated = cursor.fetchall()
     conn.close()
 
     return [row['band_name'] for row in rated]
 
-def get_bands_in_playlists():
-    """Get all bands that have been added to playlists."""
+def get_bands_in_playlists(user_id=1):
+    """Get all bands that have been added to playlists for a user."""
     conn = get_db_connection()
     cursor = conn.cursor()
 
@@ -384,14 +593,16 @@ def get_bands_in_playlists():
         SELECT DISTINCT ms.id, ms.band_name
         FROM playlist_suggestions ps
         JOIN music_suggestions ms ON ps.suggestion_id = ms.id
-    ''')
+        JOIN user_playlists up ON ps.playlist_id = up.id
+        WHERE up.user_id = ?
+    ''', (user_id,))
 
     results = cursor.fetchall()
     conn.close()
 
     return {row['id']: row['band_name'] for row in results}
 
-def save_playlist(playlist_name, spotify_playlist_id, spotify_url, band_count, track_count):
+def save_playlist(playlist_name, spotify_playlist_id, spotify_url, band_count, track_count, user_id=1):
     """
     Save a new playlist to the database.
 
@@ -401,6 +612,7 @@ def save_playlist(playlist_name, spotify_playlist_id, spotify_url, band_count, t
         spotify_url: URL to the Spotify playlist
         band_count: Number of artists in the playlist
         track_count: Total number of tracks
+        user_id: ID of the user who created this playlist
 
     Returns:
         The ID of the newly created playlist
@@ -409,9 +621,9 @@ def save_playlist(playlist_name, spotify_playlist_id, spotify_url, band_count, t
     cursor = conn.cursor()
 
     cursor.execute('''
-        INSERT INTO user_playlists (playlist_name, spotify_playlist_id, spotify_url, band_count, track_count)
-        VALUES (?, ?, ?, ?, ?)
-    ''', (playlist_name, spotify_playlist_id, spotify_url, band_count, track_count))
+        INSERT INTO user_playlists (playlist_name, spotify_playlist_id, spotify_url, band_count, track_count, user_id)
+        VALUES (?, ?, ?, ?, ?, ?)
+    ''', (playlist_name, spotify_playlist_id, spotify_url, band_count, track_count, user_id))
 
     playlist_id = cursor.lastrowid
     conn.commit()
@@ -439,9 +651,9 @@ def link_playlist_to_suggestions(playlist_id, suggestion_ids_with_counts):
     conn.commit()
     conn.close()
 
-def get_all_playlists():
+def get_all_playlists(user_id=1):
     """
-    Get all user playlists.
+    Get all playlists for a user.
 
     Returns:
         List of playlist dictionaries with details
@@ -459,8 +671,9 @@ def get_all_playlists():
             track_count,
             created_at
         FROM user_playlists
+        WHERE user_id = ?
         ORDER BY created_at DESC
-    ''')
+    ''', (user_id,))
 
     playlists = []
     for row in cursor.fetchall():
@@ -569,6 +782,196 @@ def update_playlist_track_count(playlist_id, additional_tracks):
 
     conn.commit()
     conn.close()
+
+# Spotify Auth CRUD Functions
+
+def save_spotify_auth(user_id, token_info, spotify_user_info):
+    """Save Spotify authentication data for a user."""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    cursor.execute('''
+        UPDATE users SET
+            spotify_user_id = ?,
+            spotify_display_name = ?,
+            spotify_access_token = ?,
+            spotify_refresh_token = ?,
+            spotify_token_expires_at = ?,
+            spotify_connected_at = CURRENT_TIMESTAMP
+        WHERE id = ?
+    ''', (
+        spotify_user_info.get('id'),
+        spotify_user_info.get('display_name'),
+        token_info.get('access_token'),
+        token_info.get('refresh_token'),
+        token_info.get('expires_at'),
+        user_id
+    ))
+
+    conn.commit()
+    conn.close()
+
+def get_spotify_auth(user_id):
+    """Get Spotify authentication data for a user."""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    cursor.execute('''
+        SELECT spotify_user_id, spotify_display_name, spotify_access_token,
+               spotify_refresh_token, spotify_token_expires_at, spotify_connected_at
+        FROM users WHERE id = ?
+    ''', (user_id,))
+
+    row = cursor.fetchone()
+    conn.close()
+
+    if row and row['spotify_access_token']:
+        return {
+            'spotify_user_id': row['spotify_user_id'],
+            'spotify_display_name': row['spotify_display_name'],
+            'spotify_access_token': row['spotify_access_token'],
+            'spotify_refresh_token': row['spotify_refresh_token'],
+            'spotify_token_expires_at': row['spotify_token_expires_at'],
+            'spotify_connected_at': row['spotify_connected_at']
+        }
+    return None
+
+def update_spotify_token(user_id, token_info):
+    """Update Spotify tokens after refresh."""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    cursor.execute('''
+        UPDATE users SET
+            spotify_access_token = ?,
+            spotify_refresh_token = ?,
+            spotify_token_expires_at = ?
+        WHERE id = ?
+    ''', (
+        token_info.get('access_token'),
+        token_info.get('refresh_token'),
+        token_info.get('expires_at'),
+        user_id
+    ))
+
+    conn.commit()
+    conn.close()
+
+def clear_spotify_auth(user_id):
+    """Clear Spotify authentication data for a user."""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    cursor.execute('''
+        UPDATE users SET
+            spotify_user_id = NULL,
+            spotify_display_name = NULL,
+            spotify_access_token = NULL,
+            spotify_refresh_token = NULL,
+            spotify_token_expires_at = NULL,
+            spotify_connected_at = NULL
+        WHERE id = ?
+    ''', (user_id,))
+
+    # Also clear their taste data
+    cursor.execute('DELETE FROM spotify_taste_data WHERE user_id = ?', (user_id,))
+
+    conn.commit()
+    conn.close()
+
+# Spotify Taste Data CRUD Functions
+
+def save_taste_data(user_id, data_type, time_range, data):
+    """Save or update Spotify taste data for a user."""
+    import json
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    # Delete existing data of this type for this user
+    if time_range:
+        cursor.execute('''
+            DELETE FROM spotify_taste_data
+            WHERE user_id = ? AND data_type = ? AND time_range = ?
+        ''', (user_id, data_type, time_range))
+    else:
+        cursor.execute('''
+            DELETE FROM spotify_taste_data
+            WHERE user_id = ? AND data_type = ? AND time_range IS NULL
+        ''', (user_id, data_type))
+
+    # Insert new data
+    cursor.execute('''
+        INSERT INTO spotify_taste_data (user_id, data_type, time_range, data)
+        VALUES (?, ?, ?, ?)
+    ''', (user_id, data_type, time_range, json.dumps(data)))
+
+    conn.commit()
+    conn.close()
+
+def get_taste_data(user_id):
+    """Get all Spotify taste data for a user."""
+    import json
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    cursor.execute('''
+        SELECT data_type, time_range, data, synced_at
+        FROM spotify_taste_data
+        WHERE user_id = ?
+    ''', (user_id,))
+
+    rows = cursor.fetchall()
+    conn.close()
+
+    if not rows:
+        return None
+
+    result = {
+        'synced_at': None,
+        'top_artists': {},
+        'followed_artists': [],
+        'saved_tracks': []
+    }
+
+    for row in rows:
+        data_type = row['data_type']
+        time_range = row['time_range']
+        data = json.loads(row['data'])
+
+        if data_type == 'top_artists':
+            result['top_artists'][time_range] = data
+        elif data_type == 'followed_artists':
+            result['followed_artists'] = data
+        elif data_type == 'saved_tracks':
+            result['saved_tracks'] = data
+
+        # Track most recent sync time
+        if result['synced_at'] is None or row['synced_at'] > result['synced_at']:
+            result['synced_at'] = row['synced_at']
+
+    return result
+
+def get_taste_sync_status(user_id):
+    """Get sync status for a user's taste data."""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    cursor.execute('''
+        SELECT MAX(synced_at) as last_synced,
+               COUNT(*) as data_count
+        FROM spotify_taste_data
+        WHERE user_id = ?
+    ''', (user_id,))
+
+    row = cursor.fetchone()
+    conn.close()
+
+    return {
+        'last_synced': row['last_synced'] if row else None,
+        'has_data': row['data_count'] > 0 if row else False
+    }
 
 # Test function
 if __name__ == '__main__':

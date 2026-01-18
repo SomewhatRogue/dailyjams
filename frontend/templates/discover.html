@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Discover - DailyJams</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/discover.css') }}">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="discover-header">
+                <h1>DailyJams</h1>
+                <a href="/" class="btn-change-mood">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg>
+                    Change Mood
+                </a>
+            </div>
+            <p class="tagline">Swipe to discover your next favorite artist</p>
+            <div class="header-links">
+                <a href="/users" class="current-user-indicator" title="Switch User">
+                    <span class="user-avatar-small" id="header-avatar">?</span>
+                    <span class="user-name-display" id="header-username">Loading...</span>
+                </a>
+                <a href="/history" class="btn-header-link">View History</a>
+                <a href="/profile" class="btn-header-link">Settings</a>
+            </div>
+        </header>
+
+        <main>
+            <!-- No Preferences Message (shown if no stored preferences) -->
+            <div id="no-preferences" class="no-preferences hidden">
+                <h2>No mood set yet</h2>
+                <p>Tell us what you're in the mood for and we'll find your next favorite artists.</p>
+                <a href="/" class="btn-go-home">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg>
+                    Set Your Mood
+                </a>
+            </div>
+
+            <!-- Loading Spinner -->
+            <div id="loading" class="loading hidden">
+                <div class="spinner"></div>
+                <p>Finding your perfect music...</p>
+            </div>
+
+            <!-- Swipe Discovery Section -->
+            <div id="swipe-discovery" class="swipe-container hidden">
+                <div class="swipe-header">
+                    <div class="swipe-stats">
+                        <span class="swipe-counter" id="swipe-counter">1 / 5</span>
+                        <span class="swipe-added" id="swipe-added"></span>
+                        <button type="button" id="quick-playlist-btn" class="quick-playlist-btn">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15V6"/><path d="M18.5 18a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5Z"/><path d="M12 12H3"/><path d="M16 6H3"/><path d="M12 18H3"/></svg>
+                            Build Playlist
+                            <span class="quick-playlist-hint" id="quick-playlist-hint"></span>
+                        </button>
+                    </div>
+                    <span class="swipe-instructions">Swipe or use buttons</span>
+                </div>
+
+                <!-- Direction hints row (also clickable) -->
+                <div class="swipe-hints">
+                    <button type="button" class="swipe-hint hint-left" id="btn-swipe-left">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>
+                        <span>Pass</span>
+                    </button>
+                    <button type="button" class="swipe-hint hint-down" id="btn-swipe-down">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m19 12-7 7-7-7"/><path d="M12 5v14"/></svg>
+                        <span>More options</span>
+                    </button>
+                    <button type="button" class="swipe-hint hint-right" id="btn-swipe-right">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+                        <span>Add to playlist</span>
+                    </button>
+                </div>
+
+                <!-- Card container -->
+                <div id="swipe-cards" class="swipe-cards-wrapper">
+                    <!-- Cards will be inserted here dynamically -->
+                </div>
+
+                <!-- Down-swipe sub-menu overlay -->
+                <div id="swipe-submenu" class="swipe-submenu hidden">
+                    <div class="submenu-content">
+                        <p class="submenu-title">Already know this artist?</p>
+                        <div class="submenu-buttons">
+                            <button type="button" class="submenu-btn submenu-love" data-feedback="positive">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 10v12"/><path d="M15 5.88 14 10h5.83a2 2 0 0 1 1.92 2.56l-2.33 8A2 2 0 0 1 17.5 22H4a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h2.76a2 2 0 0 0 1.79-1.11L12 2h0a3.13 3.13 0 0 1 3 3.88Z"/></svg>
+                                Love
+                            </button>
+                            <button type="button" class="submenu-btn submenu-skip" data-feedback="skipped">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 4 15 12 5 20 5 4"/><line x1="19" y1="5" x2="19" y2="19"/></svg>
+                                Skip for now
+                            </button>
+                            <button type="button" class="submenu-btn submenu-dislike" data-feedback="negative">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 14V2"/><path d="M9 18.12 10 14H4.17a2 2 0 0 1-1.92-2.56l2.33-8A2 2 0 0 1 6.5 2H20a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-2.76a2 2 0 0 0-1.79 1.11L12 22h0a3.13 3.13 0 0 1-3-3.88Z"/></svg>
+                                Not for me
+                            </button>
+                        </div>
+                        <button type="button" class="submenu-cancel">Cancel</button>
+                    </div>
+                </div>
+
+                <!-- End card -->
+                <div id="swipe-end-card" class="swipe-end-card hidden">
+                    <div class="end-card-content">
+                        <h3 class="end-card-title">Nice exploring!</h3>
+                        <p class="end-card-summary" id="end-card-summary">You've added 0 artists to your playlist</p>
+                        <div class="end-card-buttons">
+                            <button type="button" id="btn-generate-more" class="btn-generate-more">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M16 16h5v5"/></svg>
+                                Generate More
+                            </button>
+                            <button type="button" id="btn-build-playlist" class="btn-build-playlist">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15V6"/><path d="M18.5 18a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5Z"/><path d="M12 12H3"/><path d="M16 6H3"/><path d="M12 18H3"/></svg>
+                                Build Playlist
+                            </button>
+                        </div>
+                        <a href="/" class="btn-new-search">Start New Search</a>
+                        <p class="end-card-hint">You can also build playlists from your <a href="/history">History</a> anytime</p>
+                    </div>
+                </div>
+
+                <!-- Confetti container -->
+                <div id="confetti-container" class="confetti-container"></div>
+            </div>
+        </main>
+
+        <footer>
+            <p>made for those who want to discover | <a href="https://github.com/somewhatROgue" target="_blank">SomewhatRogue</a> | Inspired by <a href="https://github.com/k4therin2" target="_blank">Katherine</a></p>
+        </footer>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/discover.js') }}"></script>
+</body>
+</html>

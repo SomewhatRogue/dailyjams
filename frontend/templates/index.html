@@ -6,7 +6,7 @@
     <title>DailyJams - Music Discovery</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Lora:wght@400;700&family=Roboto:wght@400;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
 <body>
@@ -15,6 +15,10 @@
             <h1>DailyJams</h1>
             <p class="tagline">Discover music based on your vibe</p>
             <div class="header-links">
+                <a href="/users" class="current-user-indicator" title="Switch User">
+                    <span class="user-avatar-small" id="header-avatar">?</span>
+                    <span class="user-name-display" id="header-username">Loading...</span>
+                </a>
                 <a href="/history" class="btn-header-link">View History</a>
                 <a href="/profile" class="btn-header-link">Settings</a>
             </div>
@@ -22,185 +26,273 @@
 
         <main>
             <form id="preferences-form">
-                <!-- Time of Day Section -->
-                <div class="form-section">
-                    <label class="section-label">Time of Day</label>
-                    <div class="button-group">
-                        <button type="button" class="btn-option" data-time="Morning">Morning</button>
-                        <button type="button" class="btn-option" data-time="Afternoon">Afternoon</button>
-                        <button type="button" class="btn-option" data-time="Evening">Evening</button>
-                        <button type="button" class="btn-option" data-time="Night">Night</button>
+                <!-- HERO: Primary discovery input -->
+                <div class="hero-section">
+                    <h2 class="hero-title">What's your vibe?</h2>
+                    <input type="text" id="mood" name="mood" placeholder="energetic, chill, melancholic, focused..." class="vibe-input">
+                    <p class="hero-hint">Describe how you want to feel or what you're into right now</p>
+                </div>
+
+                <!-- Discovery Arc (Half-Moon) -->
+                <div class="discovery-arc-section">
+                    <div class="discovery-arc-container">
+                        <div class="discovery-arc" id="discovery-arc">
+                            <!-- Sun icon on left -->
+                            <div class="arc-sun">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1">
+                                    <circle cx="12" cy="12" r="4"/>
+                                    <path d="M12 2v2"/><path d="M12 20v2"/>
+                                    <path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/>
+                                    <path d="M2 12h2"/><path d="M20 12h2"/>
+                                    <path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/>
+                                </svg>
+                            </div>
+                            <!-- The arc track -->
+                            <div class="arc-track">
+                                <div class="arc-fill" id="arc-fill"></div>
+                                <div class="arc-stars" id="arc-stars">
+                                    <span class="arc-star" style="--delay: 0s; --x: 70%; --y: 20%;">*</span>
+                                    <span class="arc-star" style="--delay: 0.3s; --x: 80%; --y: 40%;">*</span>
+                                    <span class="arc-star" style="--delay: 0.6s; --x: 85%; --y: 25%;">*</span>
+                                    <span class="arc-star" style="--delay: 0.9s; --x: 75%; --y: 50%;">*</span>
+                                </div>
+                                <div class="arc-thumb" id="arc-thumb"></div>
+                            </div>
+                            <!-- Moon icon on right -->
+                            <div class="arc-moon">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1">
+                                    <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>
+                                </svg>
+                            </div>
+                        </div>
+                        <!-- Hidden range input for form submission -->
+                        <input type="range" id="discovery-level" name="discovery_level" min="1" max="5" value="3" class="discovery-input-hidden">
                     </div>
-                    <input type="hidden" id="time-of-day" name="time_of_day" value="">
-                </div>
-
-                <!-- Mood Section -->
-                <div class="form-section">
-                    <label for="mood" class="section-label">What's your mood?</label>
-                    <input type="text" id="mood" name="mood" placeholder="e.g., energetic, chill, melancholic, upbeat..." class="text-input">
-                </div>
-
-                <!-- Genre Section -->
-                <div class="form-section">
-                    <label class="section-label">Genres (select any that interest you)</label>
-                    <div class="genres-grid">
-                        <label class="genre-checkbox">
-                            <input type="checkbox" name="genre" value="jazz">
-                            <span>Jazz</span>
-                        </label>
-                        <label class="genre-checkbox">
-                            <input type="checkbox" name="genre" value="rock">
-                            <span>Rock</span>
-                        </label>
-                        <label class="genre-checkbox">
-                            <input type="checkbox" name="genre" value="latin">
-                            <span>Latin</span>
-                        </label>
-                        <label class="genre-checkbox">
-                            <input type="checkbox" name="genre" value="electronic">
-                            <span>Electronic</span>
-                        </label>
-                        <label class="genre-checkbox">
-                            <input type="checkbox" name="genre" value="hiphop">
-                            <span>Hip-Hop</span>
-                        </label>
-                        <label class="genre-checkbox">
-                            <input type="checkbox" name="genre" value="classical">
-                            <span>Classical</span>
-                        </label>
-                        <label class="genre-checkbox">
-                            <input type="checkbox" name="genre" value="blues">
-                            <span>Blues</span>
-                        </label>
-                        <label class="genre-checkbox">
-                            <input type="checkbox" name="genre" value="country">
-                            <span>Country</span>
-                        </label>
-                        <label class="genre-checkbox">
-                            <input type="checkbox" name="genre" value="rnb">
-                            <span>R&B/Soul</span>
-                        </label>
-                        <label class="genre-checkbox">
-                            <input type="checkbox" name="genre" value="metal">
-                            <span>Metal</span>
-                        </label>
-                        <label class="genre-checkbox">
-                            <input type="checkbox" name="genre" value="indie">
-                            <span>Indie</span>
-                        </label>
-                        <label class="genre-checkbox">
-                            <input type="checkbox" name="genre" value="pop">
-                            <span>Pop</span>
-                        </label>
-                    </div>
-                    <p class="genre-note">Leave all unchecked for any genre</p>
-
-                    <div class="custom-genre-section">
-                        <label for="custom-genres" class="custom-genre-label">Or enter your own genres (comma-separated):</label>
-                        <input type="text" id="custom-genres" name="custom_genres" placeholder="e.g., synthwave, k-pop, ambient..." class="text-input">
-                    </div>
-                </div>
-<!-- Trending Now Section -->
-                <div class="form-section">
-                    <label class="section-label">
-                        <input type="checkbox" id="trending-now" name="trending_now" class="trending-checkbox">
-                        Trending Now (search for currently popular bands)
-                    </label>
-                    <p class="trending-note">When enabled, we'll search the web for what's trending right now and match it to your preferences</p>
-                </div>
-
-<!-- Only Discover New Section -->
-                <div class="form-section">
-                    <label class="section-label">
-                        <input type="checkbox" id="discover-new" name="discover_new" class="trending-checkbox">
-                        Only Discover New (exclude bands I've already rated)
-                    </label>
-                    <p class="trending-note">When enabled, you'll only see bands you haven't given feedback on yet</p>
-                </div>
-
-                <!-- Tempo Slider -->
-                <div class="form-section">
-                    <label for="tempo" class="section-label">Tempo / Energy Level</label>
-                    <div class="tempo-container">
-                        <input type="range" id="tempo" name="tempo" min="1" max="5" value="3" class="slider">
-                    </div>
-                    <div class="tempo-value">
-                        <span id="tempo-display">Moderate</span>
+                    <div class="discovery-arc-label">
+                        <span class="discovery-mode" id="discovery-label">Balanced</span>
+                        <span class="discovery-desc" id="discovery-description">Mix of new discoveries with some familiar</span>
                     </div>
                 </div>
 
-                <!-- Advanced Options (Instruments) -->
-                <div class="form-section">
-                    <button type="button" id="toggle-advanced" class="btn-advanced">
-                        Advanced Options (Instruments)
-                    </button>
+                <!-- Collapsible Sections -->
+                <div class="collapsible-sections">
+                    <!-- Time of Day -->
+                    <div class="collapsible-section">
+                        <button type="button" class="collapsible-header" data-section="time">
+                            <span class="collapsible-icon">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <circle cx="12" cy="12" r="4"/>
+                                    <path d="M12 2v2"/>
+                                    <path d="M12 20v2"/>
+                                    <path d="m4.93 4.93 1.41 1.41"/>
+                                    <path d="m17.66 17.66 1.41 1.41"/>
+                                    <path d="M2 12h2"/>
+                                    <path d="M20 12h2"/>
+                                    <path d="m6.34 17.66-1.41 1.41"/>
+                                    <path d="m19.07 4.93-1.41 1.41"/>
+                                </svg>
+                            </span>
+                            <span class="collapsible-title">Time of Day</span>
+                            <span class="collapsible-chevron">›</span>
+                        </button>
+                        <div class="collapsible-content" id="section-time">
+                            <div class="pill-group">
+                                <button type="button" class="pill" data-time="Morning">Morning</button>
+                                <button type="button" class="pill" data-time="Afternoon">Afternoon</button>
+                                <button type="button" class="pill" data-time="Evening">Evening</button>
+                                <button type="button" class="pill" data-time="Night">Night</button>
+                            </div>
+                            <input type="hidden" id="time-of-day" name="time_of_day" value="">
+                        </div>
+                    </div>
 
-                    <div id="advanced-options" class="advanced-hidden">
-                        <p class="advanced-description">Select which instruments you want (✓) or don't want (✗)</p>
+                    <!-- Genres -->
+                    <div class="collapsible-section">
+                        <button type="button" class="collapsible-header" data-section="genres">
+                            <span class="collapsible-icon">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <circle cx="12" cy="12" r="10"/>
+                                    <circle cx="12" cy="12" r="2"/>
+                                    <path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/>
+                                    <path d="M2 12h20"/>
+                                </svg>
+                            </span>
+                            <span class="collapsible-title">Genres</span>
+                            <span class="collapsible-chevron">›</span>
+                        </button>
+                        <div class="collapsible-content" id="section-genres">
+                            <div class="pill-group genre-pills">
+                                <label class="genre-pill">
+                                    <input type="checkbox" name="genre" value="jazz">
+                                    <span>Jazz</span>
+                                </label>
+                                <label class="genre-pill">
+                                    <input type="checkbox" name="genre" value="rock">
+                                    <span>Rock</span>
+                                </label>
+                                <label class="genre-pill">
+                                    <input type="checkbox" name="genre" value="latin">
+                                    <span>Latin</span>
+                                </label>
+                                <label class="genre-pill">
+                                    <input type="checkbox" name="genre" value="electronic">
+                                    <span>Electronic</span>
+                                </label>
+                                <label class="genre-pill">
+                                    <input type="checkbox" name="genre" value="hiphop">
+                                    <span>Hip-Hop</span>
+                                </label>
+                                <label class="genre-pill">
+                                    <input type="checkbox" name="genre" value="classical">
+                                    <span>Classical</span>
+                                </label>
+                                <label class="genre-pill">
+                                    <input type="checkbox" name="genre" value="blues">
+                                    <span>Blues</span>
+                                </label>
+                                <label class="genre-pill">
+                                    <input type="checkbox" name="genre" value="country">
+                                    <span>Country</span>
+                                </label>
+                                <label class="genre-pill">
+                                    <input type="checkbox" name="genre" value="rnb">
+                                    <span>R&B/Soul</span>
+                                </label>
+                                <label class="genre-pill">
+                                    <input type="checkbox" name="genre" value="metal">
+                                    <span>Metal</span>
+                                </label>
+                                <label class="genre-pill">
+                                    <input type="checkbox" name="genre" value="indie">
+                                    <span>Indie</span>
+                                </label>
+                                <label class="genre-pill">
+                                    <input type="checkbox" name="genre" value="pop">
+                                    <span>Pop</span>
+                                </label>
+                            </div>
+                            <p class="section-note">Leave empty for any genre</p>
+                            <div class="custom-input-wrapper">
+                                <label for="custom-genres" class="custom-label">Custom genres:</label>
+                                <input type="text" id="custom-genres" name="custom_genres" placeholder="synthwave, k-pop, ambient..." class="custom-input">
+                            </div>
+                        </div>
+                    </div>
 
-                        <div class="instruments-grid">
-                            <div class="instrument-item">
-                                <span class="instrument-name">Saxophone</span>
-                                <div class="toggle-buttons">
-                                    <button type="button" class="toggle-btn" data-instrument="saxophone" data-state="neutral">—</button>
+                    <!-- Additional Preferences -->
+                    <div class="collapsible-section">
+                        <button type="button" class="collapsible-header" data-section="interest">
+                            <span class="collapsible-icon">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M3 18v-6a9 9 0 0 1 18 0v6"/>
+                                    <path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"/>
+                                </svg>
+                            </span>
+                            <span class="collapsible-title">Similar Artists</span>
+                            <span class="collapsible-chevron">›</span>
+                        </button>
+                        <div class="collapsible-content" id="section-interest">
+                            <label for="interest" class="input-label">Artists or sounds you're into:</label>
+                            <input type="text" id="interest" name="interest" placeholder="Khruangbin, Tame Impala, lo-fi beats..." class="text-input">
+                        </div>
+                    </div>
+
+                    <!-- Advanced Options -->
+                    <div class="collapsible-section">
+                        <button type="button" class="collapsible-header" data-section="advanced">
+                            <span class="collapsible-icon">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <line x1="4" x2="4" y1="21" y2="14"/>
+                                    <line x1="4" x2="4" y1="10" y2="3"/>
+                                    <line x1="12" x2="12" y1="21" y2="12"/>
+                                    <line x1="12" x2="12" y1="8" y2="3"/>
+                                    <line x1="20" x2="20" y1="21" y2="16"/>
+                                    <line x1="20" x2="20" y1="12" y2="3"/>
+                                    <line x1="2" x2="6" y1="14" y2="14"/>
+                                    <line x1="10" x2="14" y1="8" y2="8"/>
+                                    <line x1="18" x2="22" y1="16" y2="16"/>
+                                </svg>
+                            </span>
+                            <span class="collapsible-title">Advanced Options</span>
+                            <span class="collapsible-chevron">›</span>
+                        </button>
+                        <div class="collapsible-content" id="section-advanced">
+                            <!-- Tempo Slider -->
+                            <div class="advanced-control">
+                                <label for="tempo" class="control-label">Tempo / Energy</label>
+                                <div class="tempo-container">
+                                    <input type="range" id="tempo" name="tempo" min="1" max="5" value="3" class="slider">
+                                </div>
+                                <div class="tempo-value">
+                                    <span id="tempo-display">Moderate</span>
                                 </div>
                             </div>
 
-                            <div class="instrument-item">
-                                <span class="instrument-name">Violin</span>
-                                <div class="toggle-buttons">
-                                    <button type="button" class="toggle-btn" data-instrument="violin" data-state="neutral">—</button>
+                            <!-- Instruments -->
+                            <div class="advanced-control">
+                                <label class="control-label">Instruments</label>
+                                <p class="control-description">Select preferences: ✓ want, ✗ avoid</p>
+                                <div class="instruments-grid">
+                                    <div class="instrument-item">
+                                        <span class="instrument-name">Saxophone</span>
+                                        <button type="button" class="toggle-btn" data-instrument="saxophone" data-state="neutral">—</button>
+                                    </div>
+                                    <div class="instrument-item">
+                                        <span class="instrument-name">Violin</span>
+                                        <button type="button" class="toggle-btn" data-instrument="violin" data-state="neutral">—</button>
+                                    </div>
+                                    <div class="instrument-item">
+                                        <span class="instrument-name">Clarinet</span>
+                                        <button type="button" class="toggle-btn" data-instrument="clarinet" data-state="neutral">—</button>
+                                    </div>
+                                    <div class="instrument-item">
+                                        <span class="instrument-name">Guitar</span>
+                                        <button type="button" class="toggle-btn" data-instrument="guitar" data-state="neutral">—</button>
+                                    </div>
+                                    <div class="instrument-item">
+                                        <span class="instrument-name">Piano</span>
+                                        <button type="button" class="toggle-btn" data-instrument="piano" data-state="neutral">—</button>
+                                    </div>
+                                    <div class="instrument-item">
+                                        <span class="instrument-name">Drums</span>
+                                        <button type="button" class="toggle-btn" data-instrument="drums" data-state="neutral">—</button>
+                                    </div>
+                                    <div class="instrument-item">
+                                        <span class="instrument-name">Vocals</span>
+                                        <button type="button" class="toggle-btn" data-instrument="vocals" data-state="neutral">—</button>
+                                    </div>
+                                    <div class="instrument-item">
+                                        <span class="instrument-name">Trumpet</span>
+                                        <button type="button" class="toggle-btn" data-instrument="trumpet" data-state="neutral">—</button>
+                                    </div>
                                 </div>
                             </div>
 
-                            <div class="instrument-item">
-                                <span class="instrument-name">Clarinet</span>
-                                <div class="toggle-buttons">
-                                    <button type="button" class="toggle-btn" data-instrument="clarinet" data-state="neutral">—</button>
-                                </div>
+                            <!-- Toggles -->
+                            <div class="advanced-toggles">
+                                <label class="toggle-label">
+                                    <input type="checkbox" id="trending-now" name="trending_now" class="toggle-checkbox">
+                                    <span class="toggle-text">Trending Now</span>
+                                </label>
+                                <p class="toggle-note">Search for currently popular artists</p>
                             </div>
 
-                            <div class="instrument-item">
-                                <span class="instrument-name">Guitar</span>
-                                <div class="toggle-buttons">
-                                    <button type="button" class="toggle-btn" data-instrument="guitar" data-state="neutral">—</button>
-                                </div>
-                            </div>
-
-                            <div class="instrument-item">
-                                <span class="instrument-name">Piano</span>
-                                <div class="toggle-buttons">
-                                    <button type="button" class="toggle-btn" data-instrument="piano" data-state="neutral">—</button>
-                                </div>
-                            </div>
-
-                            <div class="instrument-item">
-                                <span class="instrument-name">Drums</span>
-                                <div class="toggle-buttons">
-                                    <button type="button" class="toggle-btn" data-instrument="drums" data-state="neutral">—</button>
-                                </div>
-                            </div>
-
-                            <div class="instrument-item">
-                                <span class="instrument-name">Vocals</span>
-                                <div class="toggle-buttons">
-                                    <button type="button" class="toggle-btn" data-instrument="vocals" data-state="neutral">—</button>
-                                </div>
-                            </div>
-
-                            <div class="instrument-item">
-                                <span class="instrument-name">Trumpet</span>
-                                <div class="toggle-buttons">
-                                    <button type="button" class="toggle-btn" data-instrument="trumpet" data-state="neutral">—</button>
-                                </div>
-                            </div>
                         </div>
                     </div>
                 </div>
 
                 <!-- Submit Button -->
-                <button type="submit" id="submit-btn" class="btn-submit">
-                    Get Recommendations
+                <button type="submit" id="submit-btn" class="btn-discover">
+                    <span class="btn-icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/>
+                            <path d="M5 3v4"/>
+                            <path d="M19 17v4"/>
+                            <path d="M3 5h4"/>
+                            <path d="M17 19h4"/>
+                        </svg>
+                    </span>
+                    <span>Discover Music</span>
                 </button>
 
                 <!-- Loading Spinner -->
@@ -209,16 +301,10 @@
                     <p>Finding your perfect music...</p>
                 </div>
             </form>
-
-            <!-- Results Section -->
-            <div id="results" class="results hidden">
-                <h2>Your Recommendations</h2>
-                <div id="recommendations-container"></div>
-            </div>
         </main>
 
         <footer>
-            <p>made for those who want to discover | SomewhatRogue</p>
+            <p>made for those who want to discover | <a href="https://github.com/somewhatROgue" target="_blank">SomewhatRogue</a> | Inspired by <a href="https://github.com/k4therin2" target="_blank">Katherine</a></p>
         </footer>
     </div>
 

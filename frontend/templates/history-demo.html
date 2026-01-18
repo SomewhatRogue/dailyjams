@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Music History - DailyJams (Demo)</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/history.css') }}">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>My Music History</h1>
+            <p class="tagline">Your past ratings and discoveries</p>
+            <div class="header-links">
+                <div class="current-user-indicator">
+                    <span class="user-avatar-small" id="header-avatar" style="background-color: #9b59b6;">K</span>
+                    <span class="user-name-display" id="header-username">Kyle (Demo)</span>
+                </div>
+                <a href="/users" class="btn-header-link">Switch User</a>
+                <a href="/" class="btn-header-link">Back to Recommendations</a>
+            </div>
+        </header>
+
+        <main>
+            <!-- Filter Section -->
+            <div class="filters-section">
+                <div class="filter-buttons">
+                    <button class="filter-btn active" data-filter="all">All</button>
+                    <button class="filter-btn" data-filter="positive">Loved</button>
+                    <button class="filter-btn" data-filter="save_later">Saved for Later</button>
+                    <button class="filter-btn" data-filter="skipped">Skipped</button>
+                    <button class="filter-btn" data-filter="negative">Not For Me</button>
+                </div>
+
+                <div class="search-box">
+                    <input type="text" id="search-input" placeholder="Search by band name..." class="search-input">
+                </div>
+
+                <!-- Advanced Filters Toggle -->
+                <div class="advanced-filters-toggle">
+                    <button id="toggle-advanced-filters" class="btn-toggle-advanced"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg> Advanced Filters</button>
+                </div>
+
+                <!-- Advanced Filters -->
+                <div id="advanced-filters" class="advanced-filters advanced-filters-hidden">
+                    <div class="advanced-filter-row">
+                        <div class="filter-group">
+                            <label>Time of Day:</label>
+                            <select id="filter-time" class="filter-select">
+                                <option value="">All</option>
+                                <option value="morning">Morning</option>
+                                <option value="afternoon">Afternoon</option>
+                                <option value="evening">Evening</option>
+                                <option value="night">Night</option>
+                            </select>
+                        </div>
+
+                        <div class="filter-group">
+                            <label>Tempo:</label>
+                            <select id="filter-tempo" class="filter-select">
+                                <option value="">All</option>
+                                <option value="1">Very Slow (1)</option>
+                                <option value="2">Slow (2)</option>
+                                <option value="3">Moderate (3)</option>
+                                <option value="4">Upbeat (4)</option>
+                                <option value="5">Very Fast (5)</option>
+                            </select>
+                        </div>
+
+                        <div class="filter-group">
+                            <label>Genre:</label>
+                            <input type="text" id="filter-genre" class="filter-input" placeholder="e.g., jazz, rock...">
+                        </div>
+
+                        <div class="filter-group">
+                            <label>Mood:</label>
+                            <input type="text" id="filter-mood" class="filter-input" placeholder="e.g., energetic, calm...">
+                        </div>
+                    </div>
+
+                    <div class="filter-actions">
+                        <button id="apply-filters" class="btn-apply-filters">Apply Filters</button>
+                        <button id="clear-filters" class="btn-clear-filters">Clear All</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Stats Section -->
+            <div class="stats-section">
+                <div class="stat-card">
+                    <div class="stat-number" id="total-count">5</div>
+                    <div class="stat-label">Total Rated</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="loved-count">2</div>
+                    <div class="stat-label">Loved</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="saved-later-count">1</div>
+                    <div class="stat-label">Saved for Later</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="skipped-count">1</div>
+                    <div class="stat-label">Skipped</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="disliked-count">1</div>
+                    <div class="stat-label">Not For Me</div>
+                </div>
+            </div>
+
+            <!-- History Results (pre-populated for demo) -->
+            <div id="history-results" class="history-results">
+                <div id="history-container">
+                    <!-- Demo cards will be inserted here -->
+                </div>
+            </div>
+        </main>
+
+        <footer>
+            <p>made for those who want to discover | <a href="https://github.com/somewhatROgue" target="_blank">SomewhatRogue</a> | Inspired by <a href="https://github.com/k4therin2" target="_blank">Katherine</a></p>
+        </footer>
+    </div>
+
+    <script>
+        // Demo data - no API call needed
+        const demoHistory = [
+            {
+                id: 1, band_name: 'Khruangbin', genre: 'Psychedelic Soul, Funk',
+                description: 'A Houston-based trio known for their global music influences, blending funk, soul, and psychedelia with Thai and Middle Eastern sounds.',
+                match_reason: 'Perfect for late night vibes with their hypnotic grooves',
+                feedback_type: 'positive', time_of_day: 'night', mood: 'relaxed, dreamy',
+                tempo: 3, instruments_yes: 'guitar,bass', instruments_no: '',
+                created_at: '2025-01-15T22:30:00'
+            },
+            {
+                id: 2, band_name: 'Japanese Breakfast', genre: 'Indie Pop, Dream Pop',
+                description: "Michelle Zauner's project blending shoegaze textures with catchy pop melodies and deeply personal lyrics.",
+                match_reason: 'Matches your afternoon energy with uplifting yet introspective tones',
+                feedback_type: 'positive', time_of_day: 'afternoon', mood: 'reflective',
+                tempo: 4, instruments_yes: 'synth', instruments_no: '',
+                created_at: '2025-01-14T15:20:00'
+            },
+            {
+                id: 3, band_name: 'King Gizzard & The Lizard Wizard', genre: 'Psychedelic Rock, Garage Rock',
+                description: 'Prolific Australian band exploring everything from thrash metal to microtonal music.',
+                match_reason: 'High energy for your upbeat morning request',
+                feedback_type: 'skipped', time_of_day: 'morning', mood: 'energetic',
+                tempo: 5, instruments_yes: '', instruments_no: 'electronic',
+                created_at: '2025-01-13T09:15:00'
+            },
+            {
+                id: 4, band_name: 'Floating Points', genre: 'Electronic, Ambient',
+                description: 'Sam Shepherd creates expansive electronic soundscapes that blend jazz, classical, and ambient textures.',
+                match_reason: 'Deep listening for your contemplative evening mood',
+                feedback_type: 'save_later', time_of_day: 'evening', mood: 'contemplative',
+                tempo: 2, instruments_yes: 'piano,synth', instruments_no: '',
+                created_at: '2025-01-12T19:45:00'
+            },
+            {
+                id: 5, band_name: 'Car Seat Headrest', genre: 'Indie Rock, Lo-fi',
+                description: "Will Toledo's emotionally raw songwriting with fuzzy guitars and anthemic hooks.",
+                match_reason: 'Matches your afternoon energy request',
+                feedback_type: 'negative', time_of_day: 'afternoon', mood: 'angsty',
+                tempo: 4, instruments_yes: 'guitar', instruments_no: '',
+                created_at: '2025-01-11T14:30:00'
+            }
+        ];
+
+        // Badge text mapping with SVG icons
+        const badgeText = {
+            'positive': '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 10v12"></path><path d="M15 5.88 14 10h5.83a2 2 0 0 1 1.92 2.56l-2.33 8A2 2 0 0 1 17.5 22H4a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h2.76a2 2 0 0 0 1.79-1.11L12 2h0a3.13 3.13 0 0 1 3 3.88Z"></path></svg> Loved',
+            'negative': '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 14V2"></path><path d="M9 18.12 10 14H4.17a2 2 0 0 1-1.92-2.56l2.33-8A2 2 0 0 1 6.5 2H20a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-2.76a2 2 0 0 0-1.79 1.11L12 22h0a3.13 3.13 0 0 1-3-3.88Z"></path></svg> Not For Me',
+            'skipped': '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 4 15 12 5 20 5 4"></polygon><line x1="19" y1="5" x2="19" y2="19"></line></svg> Skipped',
+            'save_later': '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"></path></svg> Saved for Later'
+        };
+
+        // Create card HTML
+        function createHistoryCard(item) {
+            const date = new Date(item.created_at);
+            const formattedDate = date.toLocaleDateString('en-US', {
+                year: 'numeric', month: 'short', day: 'numeric',
+                hour: '2-digit', minute: '2-digit'
+            });
+
+            const instrumentsYes = item.instruments_yes ? item.instruments_yes.split(',').filter(i => i).join(', ') : 'None';
+            const instrumentsNo = item.instruments_no ? item.instruments_no.split(',').filter(i => i).join(', ') : 'None';
+
+            return `
+                <div class="history-card feedback-${item.feedback_type}">
+                    <div class="history-header">
+                        <div>
+                            <div class="band-name">${item.band_name}</div>
+                            <div class="genre">${item.genre || 'Various Genres'}</div>
+                        </div>
+                        <div>
+                            <div class="feedback-badge ${item.feedback_type}">${badgeText[item.feedback_type]}</div>
+                            <div class="history-date">${formattedDate}</div>
+                        </div>
+                    </div>
+
+                    <div class="description">${item.description || 'No description available'}</div>
+
+                    ${item.match_reason ? `<div class="match-reason">Match: ${item.match_reason}</div>` : ''}
+
+                    <div class="preferences-used">
+                        <strong>Preferences Used:</strong>
+                        <div class="pref-item"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg> Time: ${item.time_of_day || 'N/A'}</div>
+                        <div class="pref-item"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg> Mood: ${item.mood || 'N/A'}</div>
+                        <div class="pref-item"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="16" r="3"></circle></svg> Tempo: ${item.tempo || 'N/A'}/5</div>
+                        ${instrumentsYes !== 'None' ? `<div class="pref-item"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> Instruments: ${instrumentsYes}</div>` : ''}
+                        ${instrumentsNo !== 'None' ? `<div class="pref-item"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg> Avoid: ${instrumentsNo}</div>` : ''}
+                    </div>
+
+                    <div class="spotify-link-container">
+                        <label class="playlist-checkbox-label">
+                            <input type="checkbox" class="playlist-checkbox" data-band-id="${item.id}" data-band-name="${item.band_name}">
+                            <span>Add to Playlist</span>
+                        </label>
+                    </div>
+
+                    <div class="change-rating-buttons">
+                        <button class="btn-change-rating thumbs-up" data-id="${item.id}" data-type="positive"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 10v12"></path><path d="M15 5.88 14 10h5.83a2 2 0 0 1 1.92 2.56l-2.33 8A2 2 0 0 1 17.5 22H4a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h2.76a2 2 0 0 0 1.79-1.11L12 2h0a3.13 3.13 0 0 1 3 3.88Z"></path></svg> Love</button>
+                        <button class="btn-change-rating save-later" data-id="${item.id}" data-type="save_later"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"></path></svg> Save</button>
+                        <button class="btn-change-rating skip" data-id="${item.id}" data-type="skipped"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 4 15 12 5 20 5 4"></polygon><line x1="19" y1="5" x2="19" y2="19"></line></svg> Skip</button>
+                        <button class="btn-change-rating thumbs-down" data-id="${item.id}" data-type="negative"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 14V2"></path><path d="M9 18.12 10 14H4.17a2 2 0 0 1-1.92-2.56l2.33-8A2 2 0 0 1 6.5 2H20a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-2.76a2 2 0 0 0-1.79 1.11L12 22h0a3.13 3.13 0 0 1-3-3.88Z"></path></svg> Dislike</button>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Render demo cards on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            const container = document.getElementById('history-container');
+            container.innerHTML = demoHistory.map(item => createHistoryCard(item)).join('');
+        });
+    </script>
+</body>
+</html>

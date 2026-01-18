@@ -4,16 +4,17 @@ from spotipy.oauth2 import SpotifyOAuth
 from dotenv import load_dotenv
 import random
 
-# Load environment variables
-load_dotenv()
+# Load environment variables from project root
+env_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), '.env')
+load_dotenv(env_path)
 
 # Spotify OAuth configuration
 SPOTIFY_CLIENT_ID = os.getenv('SPOTIFY_CLIENT_ID')
 SPOTIFY_CLIENT_SECRET = os.getenv('SPOTIFY_CLIENT_SECRET')
 SPOTIFY_REDIRECT_URI = os.getenv('SPOTIFY_REDIRECT_URI', 'http://localhost:5000/api/spotify/callback')
 
-# OAuth scope for playlist management
-SCOPE = 'playlist-modify-public playlist-modify-private user-library-read'
+# OAuth scope for playlist management and taste data
+SCOPE = 'playlist-modify-public playlist-modify-private user-library-read user-top-read user-follow-read'
 
 def get_spotify_oauth():
     """Create and return Spotify OAuth object."""
@@ -27,7 +28,7 @@ def get_spotify_oauth():
 
 def get_spotify_client(token_info=None):
     """
-    Get authenticated Spotify client.
+    Get authenticated Spotify client (legacy - uses file cache).
 
     Args:
         token_info: Optional token info dict. If None, will try to get from cache.
@@ -47,6 +48,189 @@ def get_spotify_client(token_info=None):
     except Exception as e:
         print(f"Error creating Spotify client: {str(e)}")
         return None
+
+
+def get_spotify_client_for_user(user_id):
+    """
+    Get authenticated Spotify client for a specific DailyJams user.
+
+    Loads token from database and refreshes if expired.
+
+    Args:
+        user_id: DailyJams user ID
+
+    Returns:
+        Spotipy client object or None if user not connected to Spotify
+    """
+    from database import get_spotify_auth, update_spotify_token
+    import time
+
+    try:
+        auth_data = get_spotify_auth(user_id)
+        if not auth_data:
+            return None
+
+        # Check if token is expired (with 60 second buffer)
+        if auth_data['spotify_token_expires_at'] and auth_data['spotify_token_expires_at'] < time.time() + 60:
+            # Token expired or about to expire, refresh it
+            refreshed_token = refresh_user_token(user_id, auth_data['spotify_refresh_token'])
+            if not refreshed_token:
+                return None
+            access_token = refreshed_token['access_token']
+        else:
+            access_token = auth_data['spotify_access_token']
+
+        return spotipy.Spotify(auth=access_token)
+    except Exception as e:
+        print(f"Error getting Spotify client for user {user_id}: {str(e)}")
+        return None
+
+
+def refresh_user_token(user_id, refresh_token):
+    """
+    Refresh an expired Spotify token and save to database.
+
+    Args:
+        user_id: DailyJams user ID
+        refresh_token: Spotify refresh token
+
+    Returns:
+        New token info dict or None if refresh failed
+    """
+    from database import update_spotify_token
+
+    try:
+        sp_oauth = get_spotify_oauth()
+        token_info = sp_oauth.refresh_access_token(refresh_token)
+
+        if token_info:
+            # Save new token to database
+            update_spotify_token(user_id, token_info)
+            return token_info
+        return None
+    except Exception as e:
+        print(f"Error refreshing token for user {user_id}: {str(e)}")
+        return None
+
+
+# ============ Taste Data Functions ============
+
+def get_user_top_artists(sp, time_range='medium_term', limit=50):
+    """
+    Fetch user's top artists from Spotify.
+
+    Args:
+        sp: Authenticated Spotify client
+        time_range: 'short_term' (4 weeks), 'medium_term' (6 months), 'long_term' (years)
+        limit: Number of artists to fetch (max 50)
+
+    Returns:
+        List of artist dicts with name, genres, id
+    """
+    try:
+        results = sp.current_user_top_artists(limit=limit, time_range=time_range)
+        return [
+            {'name': a['name'], 'genres': a.get('genres', []), 'id': a['id']}
+            for a in results['items']
+        ]
+    except Exception as e:
+        print(f"Error fetching top artists ({time_range}): {str(e)}")
+        return []
+
+
+def get_user_followed_artists(sp, limit=50):
+    """
+    Fetch artists the user follows on Spotify.
+
+    Args:
+        sp: Authenticated Spotify client
+        limit: Number of artists to fetch (max 50)
+
+    Returns:
+        List of artist dicts with name, genres, id
+    """
+    try:
+        results = sp.current_user_followed_artists(limit=limit)
+        return [
+            {'name': a['name'], 'genres': a.get('genres', []), 'id': a['id']}
+            for a in results['artists']['items']
+        ]
+    except Exception as e:
+        print(f"Error fetching followed artists: {str(e)}")
+        return []
+
+
+def get_user_saved_tracks_artists(sp, limit=50):
+    """
+    Fetch unique artists from user's saved/liked tracks.
+
+    Args:
+        sp: Authenticated Spotify client
+        limit: Number of saved tracks to scan (max 50)
+
+    Returns:
+        List of artist dicts with name, id (no genres available from tracks)
+    """
+    try:
+        results = sp.current_user_saved_tracks(limit=limit)
+        artists = {}
+
+        for item in results['items']:
+            for artist in item['track']['artists']:
+                if artist['id'] not in artists:
+                    artists[artist['id']] = {'name': artist['name'], 'id': artist['id'], 'genres': []}
+
+        return list(artists.values())
+    except Exception as e:
+        print(f"Error fetching saved tracks artists: {str(e)}")
+        return []
+
+
+def sync_all_taste_data(user_id):
+    """
+    Sync all Spotify taste data for a user.
+
+    Args:
+        user_id: DailyJams user ID
+
+    Returns:
+        Dict with sync results or error
+    """
+    from database import save_taste_data
+    import json
+
+    sp = get_spotify_client_for_user(user_id)
+    if not sp:
+        return {'success': False, 'error': 'Not connected to Spotify'}
+
+    try:
+        # Fetch all taste data
+        top_short = get_user_top_artists(sp, 'short_term')
+        top_medium = get_user_top_artists(sp, 'medium_term')
+        top_long = get_user_top_artists(sp, 'long_term')
+        followed = get_user_followed_artists(sp)
+        saved = get_user_saved_tracks_artists(sp)
+
+        # Save to database
+        save_taste_data(user_id, 'top_artists', 'short_term', json.dumps(top_short))
+        save_taste_data(user_id, 'top_artists', 'medium_term', json.dumps(top_medium))
+        save_taste_data(user_id, 'top_artists', 'long_term', json.dumps(top_long))
+        save_taste_data(user_id, 'followed_artists', None, json.dumps(followed))
+        save_taste_data(user_id, 'saved_tracks', None, json.dumps(saved))
+
+        return {
+            'success': True,
+            'synced': {
+                'top_artists_short': len(top_short),
+                'top_artists_medium': len(top_medium),
+                'top_artists_long': len(top_long),
+                'followed_artists': len(followed),
+                'saved_track_artists': len(saved)
+            }
+        }
+    except Exception as e:
+        print(f"Error syncing taste data for user {user_id}: {str(e)}")
+        return {'success': False, 'error': str(e)}
 
 def search_artist(artist_name, sp=None):
     """
@@ -69,16 +253,50 @@ def search_artist(artist_name, sp=None):
 
         if results['artists']['items']:
             artist = results['artists']['items'][0]
+            # Get the best image (first one is usually largest)
+            image_url = None
+            if artist.get('images') and len(artist['images']) > 0:
+                image_url = artist['images'][0]['url']
             return {
                 'id': artist['id'],
                 'name': artist['name'],
                 'uri': artist['uri'],
-                'spotify_url': artist['external_urls']['spotify']
+                'spotify_url': artist['external_urls']['spotify'],
+                'image_url': image_url
             }
         return None
     except Exception as e:
         print(f"Error searching for artist '{artist_name}': {str(e)}")
         return None
+
+def get_artist_images(artist_names):
+    """
+    Get images for multiple artists.
+
+    Args:
+        artist_names: List of artist names
+
+    Returns:
+        Dict mapping artist names to their image URLs
+    """
+    try:
+        sp = get_spotify_client()
+        if sp is None:
+            print("Spotify not authenticated - cannot fetch artist images")
+            return {}
+
+        images = {}
+        for artist_name in artist_names:
+            artist = search_artist(artist_name, sp)
+            if artist and artist.get('image_url'):
+                images[artist_name] = artist['image_url']
+            else:
+                images[artist_name] = None
+
+        return images
+    except Exception as e:
+        print(f"Error getting artist images: {str(e)}")
+        return {}
 
 def get_artist_top_tracks(artist_id, market='US', limit=5, sp=None):
     """

@@ -13,6 +13,7 @@ let spotifyAuthenticated = false;
 
 // Initialize when page loads
 document.addEventListener('DOMContentLoaded', function() {
+    loadCurrentUser();
     loadHistory();
     initializeFilters();
     initializeSearch();
@@ -20,6 +21,27 @@ document.addEventListener('DOMContentLoaded', function() {
     checkSpotifyAuth();
     restorePlaylistSelectionsAfterOAuth();
 });
+
+// Load and display current user in header
+async function loadCurrentUser() {
+    try {
+        const response = await fetch('/api/users/current');
+        const data = await response.json();
+
+        if (data.success && data.user) {
+            const avatar = document.getElementById('header-avatar');
+            const username = document.getElementById('header-username');
+
+            if (avatar && username) {
+                avatar.textContent = data.user.name.charAt(0).toUpperCase();
+                avatar.style.backgroundColor = data.user.avatar_color;
+                username.textContent = data.user.name;
+            }
+        }
+    } catch (error) {
+        console.error('Error loading current user:', error);
+    }
+}
 
 // Load history from API
 async function loadHistory() {
@@ -100,10 +122,10 @@ function initializeAdvancedFilters() {
     toggleBtn.addEventListener('click', function() {
         if (advancedSection.classList.contains('advanced-filters-hidden')) {
             advancedSection.classList.remove('advanced-filters-hidden');
-            this.textContent = '⚙️ Hide Advanced Filters';
+            this.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg> Hide Advanced Filters';
         } else {
             advancedSection.classList.add('advanced-filters-hidden');
-            this.textContent = '⚙️ Advanced Filters';
+            this.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg> Advanced Filters';
         }
     });
 
@@ -207,12 +229,12 @@ function createHistoryCard(item) {
         minute: '2-digit'
     });
 
-    // Badge text
+    // Badge text with inline SVG icons
     const badgeText = {
-        'positive': '👍 Loved',
-        'negative': '👎 Not For Me',
-        'skipped': '⏭️ Skipped',
-        'save_later': '🔖 Saved for Later'
+        'positive': '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 10v12"></path><path d="M15 5.88 14 10h5.83a2 2 0 0 1 1.92 2.56l-2.33 8A2 2 0 0 1 17.5 22H4a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h2.76a2 2 0 0 0 1.79-1.11L12 2h0a3.13 3.13 0 0 1 3 3.88Z"></path></svg> Loved',
+        'negative': '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 14V2"></path><path d="M9 18.12 10 14H4.17a2 2 0 0 1-1.92-2.56l2.33-8A2 2 0 0 1 6.5 2H20a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-2.76a2 2 0 0 0-1.79 1.11L12 22h0a3.13 3.13 0 0 1-3-3.88Z"></path></svg> Not For Me',
+        'skipped': '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 4 15 12 5 20 5 4"></polygon><line x1="19" y1="5" x2="19" y2="19"></line></svg> Skipped',
+        'save_later': '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"></path></svg> Saved for Later'
     };
 
     // Format instruments
@@ -237,11 +259,11 @@ function createHistoryCard(item) {
 
         <div class="preferences-used">
             <strong>Preferences Used:</strong>
-            <div class="pref-item">⏰ Time: ${item.time_of_day || 'N/A'}</div>
-            <div class="pref-item">😊 Mood: ${item.mood || 'N/A'}</div>
-            <div class="pref-item">🎵 Tempo: ${item.tempo || 'N/A'}/5</div>
-            ${instrumentsYes !== 'None' ? `<div class="pref-item">✓ Instruments: ${instrumentsYes}</div>` : ''}
- ${instrumentsNo !== 'None' ? `<div class="pref-item">✗ Avoid: ${instrumentsNo}</div>` : ''}
+            <div class="pref-item"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg> Time: ${item.time_of_day || 'N/A'}</div>
+            <div class="pref-item"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg> Mood: ${item.mood || 'N/A'}</div>
+            <div class="pref-item"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="16" r="3"></circle></svg> Tempo: ${item.tempo || 'N/A'}/5</div>
+            ${instrumentsYes !== 'None' ? `<div class="pref-item"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> Instruments: ${instrumentsYes}</div>` : ''}
+            ${instrumentsNo !== 'None' ? `<div class="pref-item"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg> Avoid: ${instrumentsNo}</div>` : ''}
         </div>
 
         <div class="spotify-link-container">
@@ -252,10 +274,10 @@ function createHistoryCard(item) {
         </div>
 
         <div class="change-rating-buttons">
-            <button class="btn-change-rating thumbs-up" data-id="${item.id}" data-type="positive">👍</button>
-            <button class="btn-change-rating save-later" data-id="${item.id}" data-type="save_later">🔖</button>
-            <button class="btn-change-rating skip" data-id="${item.id}" data-type="skipped">⏭️</button>
-            <button class="btn-change-rating thumbs-down" data-id="${item.id}" data-type="negative">👎</button>
+            <button class="btn-change-rating thumbs-up" data-id="${item.id}" data-type="positive"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 10v12"></path><path d="M15 5.88 14 10h5.83a2 2 0 0 1 1.92 2.56l-2.33 8A2 2 0 0 1 17.5 22H4a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h2.76a2 2 0 0 0 1.79-1.11L12 2h0a3.13 3.13 0 0 1 3 3.88Z"></path></svg> Love</button>
+            <button class="btn-change-rating save-later" data-id="${item.id}" data-type="save_later"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"></path></svg> Save</button>
+            <button class="btn-change-rating skip" data-id="${item.id}" data-type="skipped"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 4 15 12 5 20 5 4"></polygon><line x1="19" y1="5" x2="19" y2="19"></line></svg> Skip</button>
+            <button class="btn-change-rating thumbs-down" data-id="${item.id}" data-type="negative"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 14V2"></path><path d="M9 18.12 10 14H4.17a2 2 0 0 1-1.92-2.56l2.33-8A2 2 0 0 1 6.5 2H20a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-2.76a2 2 0 0 0-1.79 1.11L12 22h0a3.13 3.13 0 0 1-3-3.88Z"></path></svg> Dislike</button>
         </div>
     `;
 
