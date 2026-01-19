@@ -12,6 +12,7 @@ from database import (
     get_all_rated_bands, save_playlist, link_playlist_to_suggestions,
     get_all_playlists, get_playlist_with_details, update_playlist_track_count,
     get_bands_in_playlists, migrate_add_user_support, migrate_add_spotify_support,
+    migrate_add_user_source_preferences,
     ensure_default_user, create_user, get_all_users, get_user_by_id, delete_user,
     get_user_count, save_spotify_auth, get_spotify_auth, update_spotify_token,
     clear_spotify_auth, save_taste_data, get_taste_data, get_taste_sync_status
@@ -37,6 +38,7 @@ with app.app_context():
     insert_default_sources()
     migrate_add_user_support()
     migrate_add_spotify_support()
+    migrate_add_user_source_preferences()
     ensure_default_user()
 
 def get_current_user_id():
@@ -181,12 +183,20 @@ def switch_user():
                 'error': 'User not found'
             }), 404
 
+        # Clear any session-level Spotify state from previous user
+        session.pop('spotify_token', None)
+
         session['current_user_id'] = user_id
+
+        # Check if new user has Spotify connected
+        auth_data = get_spotify_auth(user_id)
+        spotify_connected = auth_data is not None and auth_data.get('spotify_user_id') is not None
 
         return jsonify({
             'success': True,
             'user': user,
-            'message': f'Switched to {user["name"]}'
+            'message': f'Switched to {user["name"]}',
+            'spotify_connected': spotify_connected
         })
     except Exception as e:
         print(f"Error in POST /api/users/switch: {str(e)}")
@@ -220,8 +230,8 @@ def recommend():
         # Get current user
         user_id = get_current_user_id()
 
-        # Get enabled sources
-        sources = get_enabled_sources()
+        # Get enabled sources for this user
+        sources = get_enabled_sources(user_id)
 
         # Get excluded bands for this user
         if discover_new:
@@ -255,9 +265,9 @@ def recommend():
             user_set_genres=user_set_genres
         )
 
-        # Fetch artist images from Spotify
+        # Fetch artist images from Spotify (using current user's auth if available)
         band_names = [rec['band_name'] for rec in recommendations]
-        artist_images = get_artist_images(band_names)
+        artist_images = get_artist_images(band_names, user_id=user_id)
 
         # Add images to recommendations
         for rec in recommendations:
@@ -339,9 +349,10 @@ def feedback():
 
 @app.route('/api/sources', methods=['GET'])
 def sources():
-    """Get all available music sources."""
+    """Get all available music sources for current user."""
     try:
-        sources_list = get_enabled_sources()
+        user_id = get_current_user_id()
+        sources_list = get_enabled_sources(user_id)
         return jsonify({
             'success': True,
             'sources': sources_list
@@ -439,9 +450,10 @@ def profile_page():
 
 @app.route('/api/sources/all', methods=['GET'])
 def get_sources():
-    """Get all music sources with their enabled status."""
+    """Get all music sources with their enabled status for current user."""
     try:
-        sources = get_all_sources()
+        user_id = get_current_user_id()
+        sources = get_all_sources(user_id)
         return jsonify({
             'success': True,
             'sources': sources
@@ -455,20 +467,21 @@ def get_sources():
 
 @app.route('/api/sources/update', methods=['POST'])
 def update_sources():
-    """Update source enabled/disabled status."""
+    """Update source enabled/disabled status for current user."""
     try:
         data = request.json
         source_id = data.get('source_id')
         is_enabled = data.get('is_enabled')
-        
+
         if source_id is None or is_enabled is None:
             return jsonify({
                 'success': False,
                 'error': 'Missing required fields'
             }), 400
-        
-        update_source_preference(source_id, is_enabled)
-        
+
+        user_id = get_current_user_id()
+        update_source_preference(source_id, is_enabled, user_id)
+
         return jsonify({
             'success': True,
             'message': 'Source preference updated!'
@@ -552,7 +565,13 @@ def spotify_login():
         return_page = request.args.get('return_page', '/')
         session['spotify_oauth_return_page'] = return_page
 
-        sp_oauth = get_spotify_oauth()
+        # IMPORTANT: Store which user initiated the OAuth flow
+        # This ensures tokens are saved to the correct user even if session changes
+        session['spotify_oauth_user_id'] = get_current_user_id()
+
+        # Force show_dialog=True so Spotify always shows login screen
+        # This allows different users to connect their own Spotify accounts
+        sp_oauth = get_spotify_oauth(force_new_auth=True)
         auth_url = sp_oauth.get_authorize_url()
         return jsonify({
             'success': True,
@@ -571,34 +590,47 @@ def spotify_callback():
     try:
         sp_oauth = get_spotify_oauth()
         code = request.args.get('code')
+        error = request.args.get('error')
 
-        if code:
-            token_info = sp_oauth.get_access_token(code)
+        # Get the user who initiated the OAuth (not current session user)
+        oauth_user_id = session.get('spotify_oauth_user_id')
+        redirect_page = session.get('spotify_oauth_return_page', '/')
 
-            # Keep in session for backwards compatibility
-            session['spotify_token'] = token_info
+        # Clean up OAuth session data
+        session.pop('spotify_oauth_return_page', None)
+        session.pop('spotify_oauth_user_id', None)
 
-            # Get Spotify user info
-            import spotipy
-            sp = spotipy.Spotify(auth=token_info['access_token'])
-            spotify_user = sp.me()
-            spotify_user_info = {
-                'id': spotify_user['id'],
-                'display_name': spotify_user.get('display_name', spotify_user['id'])
-            }
+        # Handle user cancellation or error from Spotify
+        if error:
+            print(f"Spotify OAuth error: {error}")
+            return redirect(f'{redirect_page}?spotify=cancelled')
 
-            # Save to database per DailyJams user
-            user_id = get_current_user_id()
-            save_spotify_auth(user_id, token_info, spotify_user_info)
-
-            # Redirect back to the page where OAuth was initiated
-            redirect_page = session.get('spotify_oauth_return_page', '/')
-            session.pop('spotify_oauth_return_page', None)  # Clean up
-            return redirect(f'{redirect_page}?spotify=connected')
-        else:
-            redirect_page = session.get('spotify_oauth_return_page', '/')
-            session.pop('spotify_oauth_return_page', None)
+        if not code:
             return redirect(f'{redirect_page}?spotify=error')
+
+        # Validate we know which user to save tokens for
+        if not oauth_user_id:
+            print("Warning: No oauth_user_id in session, using current user")
+            oauth_user_id = get_current_user_id()
+
+        token_info = sp_oauth.get_access_token(code)
+
+        # Get Spotify user info
+        import spotipy
+        sp = spotipy.Spotify(auth=token_info['access_token'])
+        spotify_user = sp.me()
+        spotify_user_info = {
+            'id': spotify_user['id'],
+            'display_name': spotify_user.get('display_name', spotify_user['id'])
+        }
+
+        # Save to database for the user who initiated OAuth
+        save_spotify_auth(oauth_user_id, token_info, spotify_user_info)
+
+        # Make sure the session reflects the correct current user
+        session['current_user_id'] = oauth_user_id
+
+        return redirect(f'{redirect_page}?spotify=connected')
     except Exception as e:
         print(f"Error in /api/spotify/callback: {str(e)}")
         redirect_page = session.get('spotify_oauth_return_page', '/')
@@ -738,12 +770,13 @@ def get_spotify_taste():
 def test_preview_urls():
     """Test if Spotify preview URLs are available for this app."""
     try:
-        sp = get_spotify_client()
+        user_id = get_current_user_id()
+        sp = get_spotify_client(user_id=user_id)
         if not sp:
             return jsonify({
                 'success': False,
                 'authenticated': False,
-                'error': 'Not authenticated with Spotify. Please connect first at /api/spotify/login'
+                'error': 'Not authenticated with Spotify. Please connect your Spotify account.'
             })
 
         # Test with a well-known artist (Radiohead - should have tracks)
@@ -805,12 +838,13 @@ def get_tracks():
                 'error': 'No artists provided'
             }), 400
 
-        # Check authentication
-        sp = get_spotify_client()
+        # Check authentication for current user
+        user_id = get_current_user_id()
+        sp = get_spotify_client(user_id=user_id)
         if not sp:
             return jsonify({
                 'success': False,
-                'error': 'Not authenticated with Spotify'
+                'error': 'Not authenticated with Spotify. Please connect your Spotify account.'
             }), 401
 
         # Get tracks for each artist
@@ -819,7 +853,7 @@ def get_tracks():
             band_name = config['band_name']
             track_count = config.get('track_count', 3)
 
-            result = get_tracks_for_artists([band_name], tracks_per_artist=track_count, randomize=False)
+            result = get_tracks_for_artists([band_name], tracks_per_artist=track_count, randomize=False, sp=sp)
 
             if band_name in result['artists']:
                 artists_data[band_name] = result['artists'][band_name]
@@ -846,12 +880,13 @@ def create_spotify_playlist():
         selected_tracks = data.get('selected_tracks', {})  # {artist_name: {track_uris: [], suggestion_id, track_count}}
         existing_playlist_id = data.get('existing_playlist_id')  # Optional: add to existing
 
-        # Check authentication
-        sp = get_spotify_client()
+        # Check authentication for current user
+        user_id = get_current_user_id()
+        sp = get_spotify_client(user_id=user_id)
         if not sp:
             return jsonify({
                 'success': False,
-                'error': 'Not authenticated with Spotify'
+                'error': 'Not authenticated with Spotify. Please connect your Spotify account.'
             }), 401
 
         # Get current user
@@ -1004,11 +1039,12 @@ def get_playlist_details(playlist_id):
 def get_spotify_playlists():
     """Get user's playlists from Spotify (for selecting existing playlists to add to)."""
     try:
-        sp = get_spotify_client()
+        user_id = get_current_user_id()
+        sp = get_spotify_client(user_id=user_id)
         if not sp:
             return jsonify({
                 'success': False,
-                'error': 'Not authenticated with Spotify'
+                'error': 'Not authenticated with Spotify. Please connect your Spotify account.'
             }), 401
 
         playlists = get_spotify_user_playlists(sp)

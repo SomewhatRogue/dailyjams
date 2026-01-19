@@ -16,34 +16,53 @@ SPOTIFY_REDIRECT_URI = os.getenv('SPOTIFY_REDIRECT_URI', 'http://localhost:5000/
 # OAuth scope for playlist management and taste data
 SCOPE = 'playlist-modify-public playlist-modify-private user-library-read user-top-read user-follow-read'
 
-def get_spotify_oauth():
-    """Create and return Spotify OAuth object."""
+def get_spotify_oauth(force_new_auth=False):
+    """Create and return Spotify OAuth object.
+
+    Args:
+        force_new_auth: If True, forces Spotify to show login dialog
+                       (use when connecting a new user)
+    """
     return SpotifyOAuth(
         client_id=SPOTIFY_CLIENT_ID,
         client_secret=SPOTIFY_CLIENT_SECRET,
         redirect_uri=SPOTIFY_REDIRECT_URI,
         scope=SCOPE,
-        cache_path='.spotify_cache'
+        cache_path=None,  # No file cache - we use database per-user
+        show_dialog=force_new_auth  # Force login dialog for new connections
     )
 
-def get_spotify_client(token_info=None):
+def get_spotify_client(token_info=None, user_id=None):
     """
-    Get authenticated Spotify client (legacy - uses file cache).
+    Get authenticated Spotify client.
+
+    Priority:
+    1. If user_id provided, use per-user database tokens (recommended)
+    2. If token_info provided, use that directly
+    3. Fallback to file cache (legacy, not recommended for multi-user)
 
     Args:
-        token_info: Optional token info dict. If None, will try to get from cache.
+        token_info: Optional token info dict.
+        user_id: Optional DailyJams user ID to load tokens from database.
 
     Returns:
         Spotipy client object or None if not authenticated
     """
     try:
-        sp_oauth = get_spotify_oauth()
+        # Priority 1: Use per-user database tokens
+        if user_id is not None:
+            return get_spotify_client_for_user(user_id)
 
-        if token_info is None:
-            token_info = sp_oauth.get_cached_token()
-
-        if token_info:
+        # Priority 2: Use provided token info
+        if token_info is not None:
             return spotipy.Spotify(auth=token_info['access_token'])
+
+        # Priority 3: Fallback to file cache (legacy)
+        sp_oauth = get_spotify_oauth()
+        cached_token = sp_oauth.get_cached_token()
+        if cached_token:
+            return spotipy.Spotify(auth=cached_token['access_token'])
+
         return None
     except Exception as e:
         print(f"Error creating Spotify client: {str(e)}")
@@ -269,18 +288,19 @@ def search_artist(artist_name, sp=None):
         print(f"Error searching for artist '{artist_name}': {str(e)}")
         return None
 
-def get_artist_images(artist_names):
+def get_artist_images(artist_names, user_id=None):
     """
     Get images for multiple artists.
 
     Args:
         artist_names: List of artist names
+        user_id: Optional DailyJams user ID for per-user auth
 
     Returns:
         Dict mapping artist names to their image URLs
     """
     try:
-        sp = get_spotify_client()
+        sp = get_spotify_client(user_id=user_id)
         if sp is None:
             print("Spotify not authenticated - cannot fetch artist images")
             return {}
@@ -466,7 +486,7 @@ def get_current_user(sp=None):
         print(f"Error getting current user: {str(e)}")
         return None
 
-def get_tracks_for_artists(artist_names, tracks_per_artist=3, randomize=True):
+def get_tracks_for_artists(artist_names, tracks_per_artist=3, randomize=True, user_id=None, sp=None):
     """
     Get top tracks for multiple artists.
 
@@ -474,12 +494,15 @@ def get_tracks_for_artists(artist_names, tracks_per_artist=3, randomize=True):
         artist_names: List of artist names
         tracks_per_artist: Number of tracks per artist (1-5, default 3)
         randomize: Whether to randomize track order (default True)
+        user_id: Optional DailyJams user ID for per-user auth
+        sp: Optional pre-authenticated Spotify client
 
     Returns:
         Dict mapping artist names to their track lists, plus list of all track URIs
     """
     try:
-        sp = get_spotify_client()
+        if sp is None:
+            sp = get_spotify_client(user_id=user_id)
         if sp is None:
             return {'artists': {}, 'all_track_uris': [], 'error': 'Not authenticated'}
 

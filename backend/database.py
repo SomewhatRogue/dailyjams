@@ -183,6 +183,44 @@ def migrate_add_spotify_support():
     conn.close()
     print("✅ Spotify support migration complete!")
 
+
+def migrate_add_user_source_preferences():
+    """Migration: Add per-user source preferences table."""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    # Check if table already exists
+    cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='user_source_preferences'")
+    if cursor.fetchone():
+        conn.close()
+        return  # Already migrated
+
+    print("🔄 Running per-user source preferences migration...")
+
+    # Create user_source_preferences table
+    # This stores per-user overrides of the global source_preferences
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS user_source_preferences (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL,
+            source_id INTEGER NOT NULL,
+            is_enabled INTEGER DEFAULT 1,
+            FOREIGN KEY (user_id) REFERENCES users (id),
+            FOREIGN KEY (source_id) REFERENCES source_preferences (id),
+            UNIQUE(user_id, source_id)
+        )
+    ''')
+
+    # Create index for faster lookups
+    cursor.execute('''
+        CREATE INDEX IF NOT EXISTS idx_user_source_prefs
+        ON user_source_preferences (user_id)
+    ''')
+
+    conn.commit()
+    conn.close()
+    print("✅ Per-user source preferences migration complete!")
+
 def migrate_add_user_support():
     """Migration: Add user_id columns and create default user."""
     conn = get_db_connection()
@@ -408,49 +446,61 @@ def save_feedback(suggestion_id, feedback_type, user_id=1):
 
     conn.commit()
     conn.close()
-def get_enabled_sources():
-    """Get all enabled music discovery sources."""
+def get_enabled_sources(user_id=1):
+    """Get all enabled music discovery sources for a user."""
     conn = get_db_connection()
     cursor = conn.cursor()
-    
+
+    # Get sources with per-user enabled status
+    # If user has a preference, use it; otherwise use global default
     cursor.execute('''
-        SELECT source_name, source_url, description
-        FROM source_preferences
-        WHERE is_enabled = 1
-    ''')
-    
+        SELECT sp.source_name, sp.source_url, sp.description
+        FROM source_preferences sp
+        LEFT JOIN user_source_preferences usp
+            ON sp.id = usp.source_id AND usp.user_id = ?
+        WHERE COALESCE(usp.is_enabled, sp.is_enabled) = 1
+    ''', (user_id,))
+
     sources = cursor.fetchall()
     conn.close()
-    
+
     return [dict(source) for source in sources]
 
-def get_all_sources():
-    """Get all music sources (enabled and disabled)."""
+def get_all_sources(user_id=1):
+    """Get all music sources with per-user enabled/disabled status."""
     conn = get_db_connection()
     cursor = conn.cursor()
-    
+
+    # Get all sources with per-user enabled status
+    # If user has a preference, use it; otherwise use global default
     cursor.execute('''
-        SELECT id, source_name, source_url, is_enabled, description
-        FROM source_preferences
-        ORDER BY source_name
-    ''')
-    
+        SELECT sp.id, sp.source_name, sp.source_url,
+               COALESCE(usp.is_enabled, sp.is_enabled) as is_enabled,
+               sp.description
+        FROM source_preferences sp
+        LEFT JOIN user_source_preferences usp
+            ON sp.id = usp.source_id AND usp.user_id = ?
+        ORDER BY sp.source_name
+    ''', (user_id,))
+
     sources = cursor.fetchall()
     conn.close()
-    
+
     return [dict(source) for source in sources]
 
-def update_source_preference(source_id, is_enabled):
-    """Enable or disable a music source."""
+def update_source_preference(source_id, is_enabled, user_id=1):
+    """Enable or disable a music source for a specific user."""
     conn = get_db_connection()
     cursor = conn.cursor()
-    
+
+    # Insert or update user-specific preference
     cursor.execute('''
-        UPDATE source_preferences
-        SET is_enabled = ?
-        WHERE id = ?
-    ''', (is_enabled, source_id))
-    
+        INSERT INTO user_source_preferences (user_id, source_id, is_enabled)
+        VALUES (?, ?, ?)
+        ON CONFLICT(user_id, source_id)
+        DO UPDATE SET is_enabled = excluded.is_enabled
+    ''', (user_id, source_id, is_enabled))
+
     conn.commit()
     conn.close()
 

@@ -9,6 +9,7 @@ let sessionExcluded = new Set();
 let swipePlaylistCandidates = [];
 let lastRequestData = null;
 let spotifyAuthenticated = false;
+let spotifyAuthChecked = false;  // Track if auth check is complete
 
 // Swipe gesture state
 let isDragging = false;
@@ -56,15 +57,30 @@ async function checkSpotifyAuth() {
         const response = await fetch('/api/spotify/status');
         const data = await response.json();
 
-        if (data.success && data.authenticated) {
+        if (data.success && data.connected) {
             spotifyAuthenticated = true;
-            console.log('Spotify authenticated:', data.user.display_name);
+            console.log('Spotify connected:', data.spotify_display_name || 'Unknown');
         } else {
             spotifyAuthenticated = false;
         }
     } catch (error) {
         console.error('Error checking Spotify auth:', error);
         spotifyAuthenticated = false;
+    } finally {
+        spotifyAuthChecked = true;
+
+        // Check if we need to show modal after OAuth redirect
+        checkPendingPlaylistModal();
+    }
+}
+
+// Show playlist modal if we just returned from OAuth with pending candidates
+function checkPendingPlaylistModal() {
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('spotify') === 'connected' && swipePlaylistCandidates.length > 0 && spotifyAuthenticated) {
+        // Clean up URL
+        window.history.replaceState({}, document.title, window.location.pathname);
+        showPlaylistModal(swipePlaylistCandidates);
     }
 }
 
@@ -945,13 +961,8 @@ document.addEventListener('DOMContentLoaded', function() {
             sessionStorage.removeItem('pendingPlaylistCandidates');
             updateAddedCount();
 
-            // If we just came back from OAuth and have candidates, show the modal
-            const urlParams = new URLSearchParams(window.location.search);
-            if (urlParams.get('spotify') === 'connected' && swipePlaylistCandidates.length > 0) {
-                setTimeout(() => {
-                    showPlaylistModal(swipePlaylistCandidates);
-                }, 500);
-            }
+            // Modal showing is now handled in checkSpotifyAuth() after auth check completes
+            // This prevents race condition where modal tries to show before auth is verified
         } catch (error) {
             console.error('Error restoring playlist candidates:', error);
             sessionStorage.removeItem('pendingPlaylistCandidates');

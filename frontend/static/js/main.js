@@ -3,6 +3,7 @@ let selectedTime = '';
 let instrumentPreferences = {};
 let selectedForPlaylist = new Set();  // Track which bands are selected for playlist
 let spotifyAuthenticated = false;
+let spotifyAuthChecked = false;  // Track if auth check is complete
 
 // Initialize when page loads
 document.addEventListener('DOMContentLoaded', function() {
@@ -127,7 +128,7 @@ function initializeTempoSlider() {
     display.textContent = tempoLabels[slider.value];
 }
 
-// Discovery Arc Slider (Half-Moon Design)
+// Discovery Arc Slider (Half-Moon Dome Design)
 function initializeDiscoverySlider() {
     const arc = document.getElementById('discovery-arc');
     const thumb = document.getElementById('arc-thumb');
@@ -149,32 +150,34 @@ function initializeDiscoverySlider() {
         5: { label: 'Comfort Zone', desc: 'Artists you already love and similar ones' }
     };
 
-    // Position thumb along the arc based on value (1-5)
-    function updateArc(value) {
+    // Position thumb along the dome arc based on value (1-5)
+    function updateArc(value, updateSlider = true) {
         const level = discoveryLevels[value];
         const percent = (value - 1) / 4; // 0 to 1
 
-        // Calculate position on semicircle arc
-        // Arc goes from left (0) to right (1), with the curve at top
+        // Calculate position on semicircle dome arc
+        // Arc goes from left (0) to right (1), with the curve at TOP (dome shape)
         const angle = Math.PI * (1 - percent); // PI to 0 (left to right)
         const trackRect = track.getBoundingClientRect();
         const radius = trackRect.width / 2;
         const centerX = radius;
-        const centerY = trackRect.height; // Bottom of track
+        const centerY = 0; // Top of track for dome
 
         const x = centerX + radius * Math.cos(angle);
-        const y = centerY - radius * Math.sin(angle);
+        const y = Math.abs(radius * Math.sin(angle)); // Distance from top
 
-        // Position the thumb
+        // Position the thumb (using top for dome shape)
         thumb.style.left = `${x}px`;
-        thumb.style.bottom = `${trackRect.height - y}px`;
+        thumb.style.top = `${y}px`;
 
         // Update labels
         if (label) label.textContent = level.label;
         if (description) description.textContent = level.desc;
 
-        // Update hidden input
-        slider.value = value;
+        // Update slider input (sync both controls)
+        if (updateSlider) {
+            slider.value = value;
+        }
 
         // Update arc data attribute for CSS
         arc.setAttribute('data-level', value);
@@ -247,6 +250,11 @@ function initializeDiscoverySlider() {
     track.addEventListener('click', (e) => {
         const value = getValueFromPosition(e.clientX);
         updateArc(value);
+    });
+
+    // Sync slider with arc - when slider changes, update arc
+    slider.addEventListener('input', (e) => {
+        updateArc(parseInt(e.target.value), false);
     });
 
     // Initialize with current value
@@ -502,27 +510,56 @@ async function checkSpotifyAuth() {
         const response = await fetch('/api/spotify/status');
         const data = await response.json();
 
-        if (data.success && data.authenticated) {
+        if (data.success && data.connected) {
             spotifyAuthenticated = true;
-            console.log('Spotify authenticated:', data.user.display_name);
+            console.log('Spotify connected:', data.spotify_display_name);
 
-            // Check if we just came back from OAuth and have pending selections
-            const pendingSelections = sessionStorage.getItem('pendingPlaylistSelection');
-            if (pendingSelections) {
-                // Wait a bit for the UI to be ready, then auto-open playlist builder
-                setTimeout(() => {
-                    const selectedBands = Array.from(selectedForPlaylist).map(item => JSON.parse(item));
-                    if (selectedBands.length > 0) {
-                        showPlaylistModal(selectedBands);
-                    }
-                }, 500);
-            }
+            // Update discovery info tooltip
+            updateDiscoveryInfoStatus(true, data.spotify_display_name, data.taste_synced);
         } else {
             spotifyAuthenticated = false;
+            updateDiscoveryInfoStatus(false);
         }
     } catch (error) {
         console.error('Error checking Spotify auth:', error);
         spotifyAuthenticated = false;
+        updateDiscoveryInfoStatus(false);
+    } finally {
+        spotifyAuthChecked = true;
+
+        // Check if we need to show modal after OAuth redirect
+        checkPendingPlaylistModal();
+    }
+}
+
+// Show playlist modal if we just returned from OAuth with pending selections
+function checkPendingPlaylistModal() {
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('spotify') === 'connected' && selectedForPlaylist.size > 0 && spotifyAuthenticated) {
+        // Clean up URL
+        window.history.replaceState({}, document.title, window.location.pathname);
+        const selectedBands = Array.from(selectedForPlaylist).map(item => JSON.parse(item));
+        if (selectedBands.length > 0) {
+            showPlaylistModal(selectedBands);
+        }
+    }
+}
+
+// Update the discovery info tooltip with Spotify status
+function updateDiscoveryInfoStatus(connected, displayName = null, tasteSynced = false) {
+    const statusEl = document.getElementById('discovery-info-spotify-status');
+    if (!statusEl) return;
+
+    if (connected) {
+        statusEl.className = 'discovery-info-status connected';
+        if (tasteSynced) {
+            statusEl.innerHTML = `<strong>✓ Spotify connected</strong> as ${displayName}<br><small>Taste data synced</small>`;
+        } else {
+            statusEl.innerHTML = `<strong>✓ Spotify connected</strong> as ${displayName}<br><small>Sync taste data in <a href="/profile" style="color: inherit; text-decoration: underline;">Settings</a> for better recommendations</small>`;
+        }
+    } else {
+        statusEl.className = 'discovery-info-status disconnected';
+        statusEl.innerHTML = `<strong>Spotify not connected</strong><br><small><a href="/profile" style="color: inherit; text-decoration: underline;">Connect Spotify</a> for personalized discovery</small>`;
     }
 }
 
@@ -556,6 +593,9 @@ function restorePlaylistSelections() {
 
                 // Clear the pending selections after successful restore
                 sessionStorage.removeItem('pendingPlaylistSelection');
+
+                // Modal showing is now handled in checkSpotifyAuth() after auth check completes
+                // This prevents race condition where modal tries to show before auth is verified
             }, 100);
         } catch (error) {
             console.error('Error restoring playlist selections:', error);
