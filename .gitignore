@@ -50,3 +50,4 @@ Thumbs.db
 
 # Design consultant history (tracks file changes)
 .design_history.json
+.cache
