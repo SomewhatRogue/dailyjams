@@ -224,8 +224,8 @@ class OnboardingManager {
         if (step.target) {
             const targetElement = document.querySelector(step.target);
             if (targetElement) {
-                this.positionSpotlight(targetElement);
-                this.positionTooltip(targetElement, step.position);
+                // Scroll element into view FIRST, then position after scroll completes
+                this.scrollToElementAndPosition(targetElement, step.position);
                 this.spotlight.classList.remove('hidden');
             } else {
                 // Target not found, skip to center
@@ -241,14 +241,27 @@ class OnboardingManager {
         // Focus management
         setTimeout(() => {
             this.tooltip.querySelector('.tooltip-btn-next').focus();
-        }, 100);
+        }, 400);
+    }
+
+    scrollToElementAndPosition(element, position) {
+        // Scroll element into view first
+        element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+        // Wait for scroll to complete, then position
+        // Using a timeout since scrollIntoView doesn't have a callback
+        setTimeout(() => {
+            this.positionSpotlight(element);
+            this.positionTooltip(element, position);
+        }, 350);
     }
 
     positionSpotlight(element) {
         const rect = element.getBoundingClientRect();
         const padding = 10;
 
-        this.spotlight.style.top = `${rect.top - padding + window.scrollY}px`;
+        // Use viewport-relative positioning (fixed positioning in CSS)
+        this.spotlight.style.top = `${rect.top - padding}px`;
         this.spotlight.style.left = `${rect.left - padding}px`;
         this.spotlight.style.width = `${rect.width + padding * 2}px`;
         this.spotlight.style.height = `${rect.height + padding * 2}px`;
@@ -256,9 +269,6 @@ class OnboardingManager {
         // Match border radius of target if applicable
         const computedStyle = window.getComputedStyle(element);
         this.spotlight.style.borderRadius = computedStyle.borderRadius || 'var(--radius-md)';
-
-        // Scroll element into view if needed
-        element.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
 
     positionTooltip(targetElement, position) {
@@ -272,38 +282,47 @@ class OnboardingManager {
 
         let top, left;
 
+        // Use viewport-relative positioning (fixed positioning in CSS)
         switch (position) {
             case 'below':
-                top = rect.bottom + arrowOffset + window.scrollY;
+                top = rect.bottom + arrowOffset;
                 left = rect.left + (rect.width / 2) - (tooltipRect.width / 2);
                 this.tooltip.classList.add('arrow-top');
                 break;
             case 'above':
-                top = rect.top - tooltipRect.height - arrowOffset + window.scrollY;
+                top = rect.top - tooltipRect.height - arrowOffset;
                 left = rect.left + (rect.width / 2) - (tooltipRect.width / 2);
                 this.tooltip.classList.add('arrow-bottom');
                 break;
             case 'right':
-                top = rect.top + (rect.height / 2) - (tooltipRect.height / 2) + window.scrollY;
+                top = rect.top + (rect.height / 2) - (tooltipRect.height / 2);
                 left = rect.right + arrowOffset;
                 this.tooltip.classList.add('arrow-left');
                 break;
             case 'left':
-                top = rect.top + (rect.height / 2) - (tooltipRect.height / 2) + window.scrollY;
+                top = rect.top + (rect.height / 2) - (tooltipRect.height / 2);
                 left = rect.left - tooltipRect.width - arrowOffset;
                 this.tooltip.classList.add('arrow-right');
                 break;
             default:
-                top = rect.bottom + arrowOffset + window.scrollY;
+                top = rect.bottom + arrowOffset;
                 left = rect.left + (rect.width / 2) - (tooltipRect.width / 2);
                 this.tooltip.classList.add('arrow-top');
         }
 
         // Keep tooltip within viewport
         const viewportWidth = window.innerWidth;
+        const viewportHeight = window.innerHeight;
+
         if (left < padding) left = padding;
         if (left + tooltipRect.width > viewportWidth - padding) {
             left = viewportWidth - tooltipRect.width - padding;
+        }
+
+        // Keep tooltip within vertical viewport
+        if (top < padding) top = padding;
+        if (top + tooltipRect.height > viewportHeight - padding) {
+            top = viewportHeight - tooltipRect.height - padding;
         }
 
         this.tooltip.style.top = `${top}px`;
@@ -318,7 +337,7 @@ class OnboardingManager {
         const viewportHeight = window.innerHeight;
 
         const left = (viewportWidth - tooltipRect.width) / 2;
-        const top = (viewportHeight - tooltipRect.height) / 2 + window.scrollY;
+        const top = (viewportHeight - tooltipRect.height) / 2;
 
         this.tooltip.style.left = `${left}px`;
         this.tooltip.style.top = `${top}px`;

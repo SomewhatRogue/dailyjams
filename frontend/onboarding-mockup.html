@@ -1,0 +1,1000 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DailyJams Onboarding - Design Mockup</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        /* Import existing Daily Jams theme variables */
+        :root {
+            /* Colors - Night Sky */
+            --night-deep: #1e293b;
+            --night-darker: #0f172a;
+            --night-blue: #1e40af;
+            --swirl-blue: #3b82f6;
+            --swirl-light: #60a5fa;
+
+            /* Colors - Stars */
+            --star-gold: #fbbf24;
+            --star-bright: #fde047;
+            --star-glow: #fef3c7;
+
+            /* Colors - Text */
+            --text-cream: #fef3c7;
+            --text-light: #fde68a;
+            --text-muted: #d1d5db;
+            --text-dark: #1f2937;
+
+            /* Typography */
+            --font-heading: 'Playfair Display', serif;
+            --font-body: 'Inter', sans-serif;
+
+            /* Spacing */
+            --space-xs: 8px;
+            --space-sm: 12px;
+            --space-md: 16px;
+            --space-lg: 24px;
+            --space-xl: 32px;
+            --space-2xl: 48px;
+
+            /* Border Radius */
+            --radius-sm: 8px;
+            --radius-md: 12px;
+            --radius-lg: 16px;
+            --radius-pill: 999px;
+
+            /* Shadows */
+            --shadow-soft: 0 4px 20px rgba(0, 0, 0, 0.3);
+            --shadow-glow: 0 0 20px rgba(251, 191, 36, 0.3);
+            --shadow-glow-strong: 0 0 30px rgba(251, 191, 36, 0.5);
+        }
+
+        body {
+            font-family: var(--font-body);
+            background: var(--night-darker);
+            color: var(--text-cream);
+            min-height: 100vh;
+            padding: var(--space-lg);
+            margin: 0;
+        }
+
+        .demo-container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .demo-header {
+            text-align: center;
+            margin-bottom: var(--space-2xl);
+            padding: var(--space-xl);
+            background: linear-gradient(135deg, var(--night-blue) 0%, var(--night-deep) 100%);
+            border-radius: var(--radius-lg);
+        }
+
+        .demo-header h1 {
+            font-family: var(--font-heading);
+            font-size: 2.5em;
+            color: var(--star-bright);
+            margin-bottom: var(--space-sm);
+            text-shadow: 0 0 20px rgba(253, 224, 71, 0.5);
+        }
+
+        .demo-section {
+            margin-bottom: var(--space-2xl);
+            background: linear-gradient(135deg, var(--night-deep) 0%, var(--night-darker) 100%);
+            border-radius: var(--radius-lg);
+            padding: var(--space-xl);
+            box-shadow: var(--shadow-soft);
+        }
+
+        .demo-section h2 {
+            font-family: var(--font-heading);
+            font-size: 1.8em;
+            color: var(--star-gold);
+            margin-bottom: var(--space-lg);
+        }
+
+        .demo-section p {
+            color: var(--text-muted);
+            margin-bottom: var(--space-md);
+            line-height: 1.6;
+        }
+
+        .mockup-frame {
+            background: var(--night-darker);
+            border-radius: var(--radius-lg);
+            padding: var(--space-lg);
+            margin-bottom: var(--space-lg);
+            border: 1px solid rgba(96, 165, 250, 0.3);
+            position: relative;
+        }
+
+        .mockup-label {
+            position: absolute;
+            top: -12px;
+            left: var(--space-lg);
+            background: var(--star-gold);
+            color: var(--text-dark);
+            padding: 4px 12px;
+            border-radius: var(--radius-pill);
+            font-size: 0.85em;
+            font-weight: 600;
+        }
+
+        /* =================
+           ONBOARDING BUTTON (SHINING)
+           ================= */
+        .onboarding-trigger-btn {
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+            gap: var(--space-xs);
+            padding: var(--space-sm) var(--space-lg);
+            background: linear-gradient(135deg, var(--star-gold) 0%, var(--star-bright) 100%);
+            color: var(--text-dark);
+            border: none;
+            border-radius: var(--radius-pill);
+            font-size: 0.95em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: var(--shadow-glow);
+            animation: pulse-glow 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse-glow {
+            0%, 100% {
+                box-shadow: 0 0 20px rgba(251, 191, 36, 0.4),
+                            0 0 40px rgba(251, 191, 36, 0.2);
+                transform: scale(1);
+            }
+            50% {
+                box-shadow: 0 0 30px rgba(251, 191, 36, 0.6),
+                            0 0 60px rgba(251, 191, 36, 0.3);
+                transform: scale(1.05);
+            }
+        }
+
+        .onboarding-trigger-btn:hover {
+            transform: translateY(-2px);
+            animation: none;
+        }
+
+        .onboarding-trigger-btn svg {
+            width: 20px;
+            height: 20px;
+        }
+
+        /* Shine effect overlay */
+        .onboarding-trigger-btn::after {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -50%;
+            bottom: -50%;
+            left: -50%;
+            background: linear-gradient(to bottom, rgba(255, 255, 255, 0.3) 0%, transparent 50%, transparent 100%);
+            transform: rotate(45deg) translateX(-100%);
+            animation: shine 3s ease-in-out infinite;
+        }
+
+        @keyframes shine {
+            0% {
+                transform: rotate(45deg) translateX(-200%);
+            }
+            20% {
+                transform: rotate(45deg) translateX(200%);
+            }
+            100% {
+                transform: rotate(45deg) translateX(200%);
+            }
+        }
+
+        /* =================
+           OVERLAY & BACKDROP
+           ================= */
+        .onboarding-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 9999;
+            pointer-events: none;
+        }
+
+        .onboarding-backdrop {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(15, 23, 42, 0.92);
+            backdrop-filter: blur(4px);
+            opacity: 0;
+            transition: opacity 0.4s ease;
+        }
+
+        .onboarding-overlay.active .onboarding-backdrop {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        /* =================
+           SPOTLIGHT EFFECT
+           ================= */
+        .onboarding-spotlight {
+            position: absolute;
+            border-radius: var(--radius-lg);
+            box-shadow: 0 0 0 9999px rgba(15, 23, 42, 0.92),
+                        0 0 40px rgba(251, 191, 36, 0.6),
+                        inset 0 0 40px rgba(251, 191, 36, 0.15);
+            border: 3px solid var(--star-gold);
+            pointer-events: none;
+            z-index: 10000;
+            transition: all 0.4s ease;
+            animation: spotlight-pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes spotlight-pulse {
+            0%, 100% {
+                box-shadow: 0 0 0 9999px rgba(15, 23, 42, 0.92),
+                            0 0 40px rgba(251, 191, 36, 0.6),
+                            inset 0 0 40px rgba(251, 191, 36, 0.15);
+            }
+            50% {
+                box-shadow: 0 0 0 9999px rgba(15, 23, 42, 0.92),
+                            0 0 60px rgba(251, 191, 36, 0.8),
+                            inset 0 0 60px rgba(251, 191, 36, 0.25);
+            }
+        }
+
+        /* =================
+           TOOLTIP CARD
+           ================= */
+        .onboarding-tooltip {
+            position: absolute;
+            max-width: 360px;
+            background: linear-gradient(135deg, var(--night-blue) 0%, var(--night-deep) 100%);
+            border: 2px solid var(--star-gold);
+            border-radius: var(--radius-lg);
+            padding: var(--space-lg);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.7),
+                        0 0 40px rgba(251, 191, 36, 0.3);
+            z-index: 10001;
+            pointer-events: auto;
+            animation: tooltip-enter 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        @keyframes tooltip-enter {
+            0% {
+                opacity: 0;
+                transform: translateY(20px) scale(0.9);
+            }
+            100% {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        /* Arrow pointer */
+        .onboarding-tooltip::before {
+            content: '';
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            background: var(--night-blue);
+            border: 2px solid var(--star-gold);
+            border-bottom: none;
+            border-right: none;
+            transform: rotate(45deg);
+        }
+
+        .onboarding-tooltip.position-below::before {
+            top: -11px;
+            left: 50%;
+            margin-left: -10px;
+        }
+
+        .onboarding-tooltip.position-above::before {
+            bottom: -11px;
+            left: 50%;
+            margin-left: -10px;
+            transform: rotate(225deg);
+        }
+
+        .onboarding-tooltip.position-right::before {
+            left: -11px;
+            top: 50%;
+            margin-top: -10px;
+            transform: rotate(-45deg);
+        }
+
+        .onboarding-tooltip.position-left::before {
+            right: -11px;
+            top: 50%;
+            margin-top: -10px;
+            transform: rotate(135deg);
+        }
+
+        .tooltip-content {
+            position: relative;
+            z-index: 1;
+        }
+
+        .tooltip-step {
+            display: inline-block;
+            color: var(--star-gold);
+            font-size: 0.85em;
+            font-weight: 600;
+            margin-bottom: var(--space-sm);
+        }
+
+        .tooltip-title {
+            font-family: var(--font-heading);
+            font-size: 1.4em;
+            color: var(--star-bright);
+            margin-bottom: var(--space-sm);
+            text-shadow: 0 0 15px rgba(253, 224, 71, 0.4);
+        }
+
+        .tooltip-description {
+            color: var(--text-cream);
+            line-height: 1.6;
+            margin-bottom: var(--space-lg);
+        }
+
+        .tooltip-actions {
+            display: flex;
+            gap: var(--space-sm);
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .tooltip-btn {
+            padding: var(--space-sm) var(--space-lg);
+            border-radius: var(--radius-pill);
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: var(--space-xs);
+            font-size: 0.95em;
+        }
+
+        .tooltip-btn-skip {
+            background: transparent;
+            border: 2px solid rgba(96, 165, 250, 0.3);
+            color: var(--text-muted);
+        }
+
+        .tooltip-btn-skip:hover {
+            border-color: rgba(96, 165, 250, 0.5);
+            color: var(--text-cream);
+        }
+
+        .tooltip-btn-next,
+        .tooltip-btn-done {
+            background: linear-gradient(135deg, var(--star-gold) 0%, var(--star-bright) 100%);
+            color: var(--text-dark);
+            border: none;
+            box-shadow: var(--shadow-glow);
+        }
+
+        .tooltip-btn-next:hover,
+        .tooltip-btn-done:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-glow-strong);
+        }
+
+        .tooltip-btn svg {
+            width: 18px;
+            height: 18px;
+        }
+
+        .tooltip-progress {
+            display: flex;
+            gap: 6px;
+            margin-top: var(--space-md);
+        }
+
+        .progress-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: rgba(96, 165, 250, 0.3);
+            transition: all 0.3s ease;
+        }
+
+        .progress-dot.active {
+            background: var(--star-gold);
+            box-shadow: 0 0 10px rgba(251, 191, 36, 0.5);
+        }
+
+        /* =================
+           DEMO SPECIFIC
+           ================= */
+        .demo-page-mock {
+            background: var(--night-darker);
+            border-radius: var(--radius-md);
+            padding: var(--space-xl);
+            min-height: 400px;
+            position: relative;
+        }
+
+        .mock-nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: var(--space-lg);
+            background: linear-gradient(135deg, var(--night-blue) 0%, var(--night-deep) 100%);
+            border-radius: var(--radius-md);
+            margin-bottom: var(--space-lg);
+        }
+
+        .mock-title {
+            font-family: var(--font-heading);
+            font-size: 1.8em;
+            color: var(--star-bright);
+        }
+
+        .mock-vibe-input {
+            width: 100%;
+            max-width: 500px;
+            padding: var(--space-lg);
+            background: rgba(30, 41, 59, 0.8);
+            border: 2px solid var(--swirl-blue);
+            border-radius: var(--radius-pill);
+            color: var(--text-cream);
+            text-align: center;
+            margin: var(--space-xl) auto;
+            display: block;
+        }
+
+        .mock-arc {
+            width: 200px;
+            height: 100px;
+            background: linear-gradient(135deg, rgba(30, 64, 175, 0.3) 0%, rgba(30, 41, 59, 0.5) 100%);
+            border: 2px solid rgba(96, 165, 250, 0.3);
+            border-radius: 100px 100px 0 0;
+            margin: var(--space-xl) auto;
+        }
+
+        .mock-section {
+            background: rgba(30, 41, 59, 0.5);
+            border-radius: var(--radius-md);
+            padding: var(--space-lg);
+            margin-bottom: var(--space-md);
+            border: 1px solid rgba(59, 130, 246, 0.2);
+        }
+
+        .flow-diagram {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-md);
+            padding: var(--space-lg);
+        }
+
+        .flow-step {
+            display: flex;
+            align-items: center;
+            gap: var(--space-md);
+        }
+
+        .flow-number {
+            width: 32px;
+            height: 32px;
+            background: var(--star-gold);
+            color: var(--text-dark);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            flex-shrink: 0;
+        }
+
+        .flow-text {
+            flex: 1;
+            color: var(--text-cream);
+        }
+
+        code {
+            background: rgba(30, 41, 59, 0.8);
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            color: var(--star-gold);
+        }
+    </style>
+</head>
+<body>
+    <div class="demo-container">
+        <div class="demo-header">
+            <h1>Daily Jams Onboarding System</h1>
+            <p style="color: var(--text-light); margin: 0;">Visual Design Mockups & Interaction Flow</p>
+        </div>
+
+        <!-- DESIGN OVERVIEW -->
+        <div class="demo-section">
+            <h2>Design System Overview</h2>
+            <p>The onboarding experience extends the Starry Night theme with a spotlight-based walkthrough. Key design elements:</p>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: var(--space-lg); margin-top: var(--space-lg);">
+                <div style="background: rgba(30, 41, 59, 0.5); padding: var(--space-lg); border-radius: var(--radius-md); border: 1px solid rgba(96, 165, 250, 0.2);">
+                    <h3 style="color: var(--star-gold); margin-bottom: var(--space-sm);">Shining Button</h3>
+                    <p style="font-size: 0.9em; margin: 0;">Animated glow + shine effect draws attention without being obnoxious</p>
+                </div>
+                <div style="background: rgba(30, 41, 59, 0.5); padding: var(--space-lg); border-radius: var(--radius-md); border: 1px solid rgba(96, 165, 250, 0.2);">
+                    <h3 style="color: var(--star-gold); margin-bottom: var(--space-sm);">Spotlight System</h3>
+                    <p style="font-size: 0.9em; margin: 0;">Dims page, highlights target element with golden glow border</p>
+                </div>
+                <div style="background: rgba(30, 41, 59, 0.5); padding: var(--space-lg); border-radius: var(--radius-md); border: 1px solid rgba(96, 165, 250, 0.2);">
+                    <h3 style="color: var(--star-gold); margin-bottom: var(--space-sm);">Tooltip Cards</h3>
+                    <p style="font-size: 0.9em; margin: 0;">Night-sky gradient with golden border, directional arrow pointer</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- STATE 1: BUTTON IN NAV -->
+        <div class="demo-section">
+            <h2>State 1: Trigger Button (Shining in Nav)</h2>
+            <p>The onboarding button appears in the header navigation with animated pulse-glow and shine effects to naturally draw attention.</p>
+
+            <div class="mockup-frame">
+                <div class="mockup-label">Live Preview</div>
+                <div class="mock-nav">
+                    <div class="mock-title">DailyJams</div>
+                    <div style="display: flex; gap: var(--space-sm); align-items: center;">
+                        <button class="onboarding-trigger-btn">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="12" cy="12" r="10"/>
+                                <circle cx="12" cy="12" r="6"/>
+                                <circle cx="12" cy="12" r="2"/>
+                            </svg>
+                            Quick Start
+                        </button>
+                        <div style="padding: var(--space-sm) var(--space-md); background: rgba(59, 130, 246, 0.2); border-radius: var(--radius-pill); color: var(--text-cream); font-size: 0.9em;">History</div>
+                        <div style="padding: var(--space-sm) var(--space-md); background: rgba(59, 130, 246, 0.2); border-radius: var(--radius-pill); color: var(--text-cream); font-size: 0.9em;">Settings</div>
+                    </div>
+                </div>
+            </div>
+
+            <div style="margin-top: var(--space-lg); padding: var(--space-lg); background: rgba(30, 41, 59, 0.4); border-radius: var(--radius-md);">
+                <h3 style="color: var(--star-bright); margin-bottom: var(--space-md);">CSS Animation Details</h3>
+                <p><strong>Pulse Glow:</strong> 2s infinite ease-in-out, scales from 1 to 1.05, box-shadow intensifies</p>
+                <p><strong>Shine Effect:</strong> 3s infinite, diagonal gradient sweep creates "light ray" passing over button</p>
+                <p><strong>Trigger:</strong> Click starts overlay, removes animation to prevent distraction during tour</p>
+            </div>
+        </div>
+
+        <!-- STATE 2: FIRST STEP -->
+        <div class="demo-section">
+            <h2>State 2: Walkthrough Step 1 (Vibe Input)</h2>
+            <p>Overlay appears, spotlight focuses on the vibe input field. Tooltip explains the primary discovery mechanism.</p>
+
+            <div class="mockup-frame">
+                <div class="mockup-label">Step 1 of 5</div>
+                <div class="demo-page-mock" style="position: relative;">
+                    <!-- Simulated backdrop -->
+                    <div style="position: absolute; inset: 0; background: rgba(15, 23, 42, 0.92); border-radius: var(--radius-md);"></div>
+
+                    <!-- Mock page content (dimmed) -->
+                    <div class="mock-nav" style="position: relative; z-index: 1; opacity: 0.3;">
+                        <div class="mock-title">DailyJams</div>
+                    </div>
+
+                    <!-- Spotlighted element -->
+                    <div style="position: relative; z-index: 10000;">
+                        <div class="onboarding-spotlight" style="position: absolute; top: -12px; left: 50%; transform: translateX(-50%); width: calc(100% - 200px); height: 80px;"></div>
+                        <input type="text" class="mock-vibe-input" placeholder="energetic, chill, melancholic, focused..." style="position: relative; z-index: 10001;">
+                    </div>
+
+                    <!-- Tooltip -->
+                    <div class="onboarding-tooltip position-below" style="position: absolute; top: 180px; left: 50%; transform: translateX(-50%); z-index: 10002;">
+                        <div class="tooltip-content">
+                            <span class="tooltip-step">Step 1 of 5</span>
+                            <h3 class="tooltip-title">Describe Your Vibe</h3>
+                            <p class="tooltip-description">
+                                Start by typing how you want to feel. Use words like "energetic", "chill", "focused", or "melancholic". This is the heart of Daily Jams.
+                            </p>
+                            <div class="tooltip-actions">
+                                <button class="tooltip-btn tooltip-btn-skip">
+                                    Skip Tour
+                                </button>
+                                <button class="tooltip-btn tooltip-btn-next">
+                                    Next
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M5 12h14"/>
+                                        <path d="m12 5 7 7-7 7"/>
+                                    </svg>
+                                </button>
+                            </div>
+                            <div class="tooltip-progress">
+                                <div class="progress-dot active"></div>
+                                <div class="progress-dot"></div>
+                                <div class="progress-dot"></div>
+                                <div class="progress-dot"></div>
+                                <div class="progress-dot"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Dimmed sections below -->
+                    <div style="position: relative; z-index: 1; opacity: 0.2; margin-top: var(--space-xl);">
+                        <div class="mock-arc"></div>
+                        <div class="mock-section" style="height: 60px;"></div>
+                        <div class="mock-section" style="height: 60px;"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- STATE 3: DISCOVERY ARC -->
+        <div class="demo-section">
+            <h2>State 3: Walkthrough Step 2 (Discovery Arc)</h2>
+            <p>Spotlight moves to the discovery arc slider. Tooltip explains the familiar/new balance.</p>
+
+            <div class="mockup-frame">
+                <div class="mockup-label">Step 2 of 5</div>
+                <div class="demo-page-mock" style="position: relative;">
+                    <div style="position: absolute; inset: 0; background: rgba(15, 23, 42, 0.92); border-radius: var(--radius-md);"></div>
+
+                    <div class="mock-vibe-input" style="opacity: 0.2;">energetic, focused</div>
+
+                    <!-- Spotlighted arc -->
+                    <div style="position: relative; z-index: 10000; margin: var(--space-xl) auto; width: fit-content;">
+                        <div class="onboarding-spotlight" style="position: absolute; top: -20px; left: -20px; right: -20px; bottom: -40px;"></div>
+                        <div class="mock-arc" style="position: relative; z-index: 10001;"></div>
+                    </div>
+
+                    <!-- Tooltip positioned to the right -->
+                    <div class="onboarding-tooltip position-right" style="position: absolute; top: 220px; left: 60%; z-index: 10002;">
+                        <div class="tooltip-content">
+                            <span class="tooltip-step">Step 2 of 5</span>
+                            <h3 class="tooltip-title">Discovery Level</h3>
+                            <p class="tooltip-description">
+                                Slide left for familiar artists you might know. Slide right for totally new discoveries. The arc goes from sun (familiar) to moon (unknown).
+                            </p>
+                            <div class="tooltip-actions">
+                                <button class="tooltip-btn tooltip-btn-skip">Skip Tour</button>
+                                <button class="tooltip-btn tooltip-btn-next">
+                                    Next
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M5 12h14"/>
+                                        <path d="m12 5 7 7-7 7"/>
+                                    </svg>
+                                </button>
+                            </div>
+                            <div class="tooltip-progress">
+                                <div class="progress-dot"></div>
+                                <div class="progress-dot active"></div>
+                                <div class="progress-dot"></div>
+                                <div class="progress-dot"></div>
+                                <div class="progress-dot"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style="opacity: 0.2; margin-top: var(--space-2xl);">
+                        <div class="mock-section" style="height: 60px;"></div>
+                        <div class="mock-section" style="height: 60px;"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- STATE 4: SWIPE GESTURES -->
+        <div class="demo-section">
+            <h2>State 4: Walkthrough Step 3 (Swipe Discovery)</h2>
+            <p>On the discover page, spotlight shows the swipe card interaction area and explains gesture controls.</p>
+
+            <div class="mockup-frame">
+                <div class="mockup-label">Step 3 of 5</div>
+                <div class="demo-page-mock" style="position: relative;">
+                    <div style="position: absolute; inset: 0; background: rgba(15, 23, 42, 0.92); border-radius: var(--radius-md);"></div>
+
+                    <!-- Mock swipe card -->
+                    <div style="position: relative; z-index: 10000; margin: var(--space-xl) auto; width: 300px;">
+                        <div class="onboarding-spotlight" style="position: absolute; top: -20px; left: -20px; right: -20px; bottom: -20px;"></div>
+                        <div style="position: relative; z-index: 10001; background: linear-gradient(135deg, rgba(30, 64, 175, 0.4) 0%, rgba(30, 41, 59, 0.6) 100%); border-radius: var(--radius-lg); padding: var(--space-xl); text-align: center;">
+                            <div style="width: 120px; height: 120px; border-radius: 50%; background: var(--star-gold); margin: 0 auto var(--space-lg);"></div>
+                            <h3 style="color: var(--star-bright); font-family: var(--font-heading); margin-bottom: var(--space-sm);">Artist Name</h3>
+                            <p style="color: var(--swirl-light); margin-bottom: var(--space-md);">Genre</p>
+                            <p style="color: var(--text-cream); font-size: 0.9em;">Artist description...</p>
+                        </div>
+                    </div>
+
+                    <!-- Tooltip positioned below -->
+                    <div class="onboarding-tooltip position-below" style="position: absolute; top: 520px; left: 50%; transform: translateX(-50%); z-index: 10002;">
+                        <div class="tooltip-content">
+                            <span class="tooltip-step">Step 3 of 5</span>
+                            <h3 class="tooltip-title">Swipe to Discover</h3>
+                            <p class="tooltip-description">
+                                Swipe right (or click the green arrow) to add artists to your playlist. Swipe left to pass. Swipe down for more options like "Already know this artist".
+                            </p>
+                            <div class="tooltip-actions">
+                                <button class="tooltip-btn tooltip-btn-skip">Skip Tour</button>
+                                <button class="tooltip-btn tooltip-btn-next">
+                                    Next
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M5 12h14"/>
+                                        <path d="m12 5 7 7-7 7"/>
+                                    </svg>
+                                </button>
+                            </div>
+                            <div class="tooltip-progress">
+                                <div class="progress-dot"></div>
+                                <div class="progress-dot"></div>
+                                <div class="progress-dot active"></div>
+                                <div class="progress-dot"></div>
+                                <div class="progress-dot"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- STATE 5: PLAYLIST CREATION -->
+        <div class="demo-section">
+            <h2>State 5: Walkthrough Step 4 (Build Playlist)</h2>
+            <p>Highlights the floating "Build Playlist" button. Explains how to create Spotify playlists from discoveries.</p>
+
+            <div class="mockup-frame">
+                <div class="mockup-label">Step 4 of 5</div>
+                <div class="demo-page-mock" style="position: relative; min-height: 300px;">
+                    <div style="position: absolute; inset: 0; background: rgba(15, 23, 42, 0.92); border-radius: var(--radius-md);"></div>
+
+                    <!-- Floating button spotlighted -->
+                    <div style="position: absolute; bottom: 30px; right: 30px; z-index: 10000;">
+                        <div class="onboarding-spotlight" style="position: absolute; top: -12px; left: -12px; right: -12px; bottom: -12px; border-radius: var(--radius-pill);"></div>
+                        <button style="position: relative; z-index: 10001; padding: var(--space-lg) var(--space-xl); background: linear-gradient(135deg, var(--star-gold) 0%, var(--star-bright) 100%); color: var(--text-dark); border: none; border-radius: var(--radius-pill); font-weight: 600; box-shadow: var(--shadow-glow-strong); cursor: pointer;">
+                            Build Playlist
+                        </button>
+                    </div>
+
+                    <!-- Tooltip positioned above -->
+                    <div class="onboarding-tooltip position-above" style="position: absolute; bottom: 120px; right: 30px; z-index: 10002;">
+                        <div class="tooltip-content">
+                            <span class="tooltip-step">Step 4 of 5</span>
+                            <h3 class="tooltip-title">Create Your Playlist</h3>
+                            <p class="tooltip-description">
+                                When you've added artists you like, click here to instantly create a Spotify playlist with their top tracks. Your discoveries become music.
+                            </p>
+                            <div class="tooltip-actions">
+                                <button class="tooltip-btn tooltip-btn-skip">Skip Tour</button>
+                                <button class="tooltip-btn tooltip-btn-next">
+                                    Next
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M5 12h14"/>
+                                        <path d="m12 5 7 7-7 7"/>
+                                    </svg>
+                                </button>
+                            </div>
+                            <div class="tooltip-progress">
+                                <div class="progress-dot"></div>
+                                <div class="progress-dot"></div>
+                                <div class="progress-dot"></div>
+                                <div class="progress-dot active"></div>
+                                <div class="progress-dot"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- STATE 6: FINAL STEP -->
+        <div class="demo-section">
+            <h2>State 6: Walkthrough Step 5 (Complete)</h2>
+            <p>Final tooltip celebrating completion. "Done" button closes the overlay and marks onboarding as seen.</p>
+
+            <div class="mockup-frame">
+                <div class="mockup-label">Step 5 of 5</div>
+                <div class="demo-page-mock" style="position: relative; display: flex; align-items: center; justify-content: center;">
+                    <div style="position: absolute; inset: 0; background: rgba(15, 23, 42, 0.92); border-radius: var(--radius-md);"></div>
+
+                    <!-- Centered completion tooltip -->
+                    <div class="onboarding-tooltip" style="position: relative; z-index: 10001; max-width: 400px;">
+                        <div class="tooltip-content">
+                            <span class="tooltip-step">Step 5 of 5</span>
+                            <h3 class="tooltip-title">You're All Set!</h3>
+                            <p class="tooltip-description">
+                                That's it! You now know how to discover music on Daily Jams. Start by describing your vibe, adjust the discovery level, then swipe through artists. Have fun exploring!
+                            </p>
+                            <div class="tooltip-actions">
+                                <div></div>
+                                <button class="tooltip-btn tooltip-btn-done">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M20 6 9 17l-5-5"/>
+                                    </svg>
+                                    Let's Go!
+                                </button>
+                            </div>
+                            <div class="tooltip-progress">
+                                <div class="progress-dot"></div>
+                                <div class="progress-dot"></div>
+                                <div class="progress-dot"></div>
+                                <div class="progress-dot"></div>
+                                <div class="progress-dot active"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- INTERACTION FLOW -->
+        <div class="demo-section">
+            <h2>Interaction Flow & Navigation</h2>
+            <div class="flow-diagram">
+                <div class="flow-step">
+                    <div class="flow-number">1</div>
+                    <div class="flow-text">
+                        <strong>Trigger:</strong> User clicks "Quick Start" button in nav (or automatically on first visit)
+                    </div>
+                </div>
+                <div class="flow-step">
+                    <div class="flow-number">2</div>
+                    <div class="flow-text">
+                        <strong>Overlay Appears:</strong> Backdrop fades in (0.4s), page content dims, pointer-events blocked except on tooltip
+                    </div>
+                </div>
+                <div class="flow-step">
+                    <div class="flow-number">3</div>
+                    <div class="flow-text">
+                        <strong>Step Sequence:</strong> Spotlight animates to target element (0.4s smooth transition), tooltip enters with bounce
+                    </div>
+                </div>
+                <div class="flow-step">
+                    <div class="flow-number">4</div>
+                    <div class="flow-text">
+                        <strong>Navigation Options:</strong> "Next" advances, "Skip Tour" closes immediately, progress dots show position
+                    </div>
+                </div>
+                <div class="flow-step">
+                    <div class="flow-number">5</div>
+                    <div class="flow-text">
+                        <strong>Completion:</strong> "Let's Go!" button closes overlay, sets localStorage flag <code>onboardingComplete: true</code>
+                    </div>
+                </div>
+                <div class="flow-step">
+                    <div class="flow-number">6</div>
+                    <div class="flow-text">
+                        <strong>Dismissal:</strong> Clicking backdrop (outside tooltip) also closes tour, pressing ESC key closes
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ANIMATION DETAILS -->
+        <div class="demo-section">
+            <h2>Animation & Timing Specifications</h2>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-lg);">
+                <div style="background: rgba(30, 41, 59, 0.5); padding: var(--space-lg); border-radius: var(--radius-md);">
+                    <h3 style="color: var(--star-gold); margin-bottom: var(--space-md);">Button Animations</h3>
+                    <p style="margin-bottom: var(--space-sm);"><strong>Pulse Glow:</strong> 2s ease-in-out infinite</p>
+                    <p style="margin-bottom: var(--space-sm);"><strong>Shine Sweep:</strong> 3s ease-in-out infinite</p>
+                    <p style="margin-bottom: var(--space-sm);"><strong>Hover:</strong> Disables animations, lifts -2px</p>
+                </div>
+                <div style="background: rgba(30, 41, 59, 0.5); padding: var(--space-lg); border-radius: var(--radius-md);">
+                    <h3 style="color: var(--star-gold); margin-bottom: var(--space-md);">Overlay Transitions</h3>
+                    <p style="margin-bottom: var(--space-sm);"><strong>Backdrop Fade:</strong> 0.4s ease</p>
+                    <p style="margin-bottom: var(--space-sm);"><strong>Spotlight Move:</strong> 0.4s ease</p>
+                    <p style="margin-bottom: var(--space-sm);"><strong>Tooltip Enter:</strong> 0.4s cubic-bezier bounce</p>
+                </div>
+                <div style="background: rgba(30, 41, 59, 0.5); padding: var(--space-lg); border-radius: var(--radius-md);">
+                    <h3 style="color: var(--star-gold); margin-bottom: var(--space-md);">Spotlight Effect</h3>
+                    <p style="margin-bottom: var(--space-sm);"><strong>Box Shadow:</strong> 0 0 0 9999px for full-screen dim</p>
+                    <p style="margin-bottom: var(--space-sm);"><strong>Border:</strong> 3px solid gold with pulsing glow</p>
+                    <p style="margin-bottom: var(--space-sm);"><strong>Pulse:</strong> 2s ease-in-out infinite</p>
+                </div>
+                <div style="background: rgba(30, 41, 59, 0.5); padding: var(--space-lg); border-radius: var(--radius-md);">
+                    <h3 style="color: var(--star-gold); margin-bottom: var(--space-md);">Tooltip Positioning</h3>
+                    <p style="margin-bottom: var(--space-sm);"><strong>Auto-detect:</strong> Calculates best position (above/below/left/right)</p>
+                    <p style="margin-bottom: var(--space-sm);"><strong>Arrow:</strong> Rotated pseudo-element with border</p>
+                    <p style="margin-bottom: var(--space-sm);"><strong>Max-width:</strong> 360px for readability</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- KEY AREAS TO HIGHLIGHT -->
+        <div class="demo-section">
+            <h2>Recommended Walkthrough Steps</h2>
+            <p>These are the 5 key areas that should be explained in the onboarding tour:</p>
+            <div style="margin-top: var(--space-lg);">
+                <div class="mock-section">
+                    <h3 style="color: var(--star-bright); margin-bottom: var(--space-sm);">1. Vibe Input (Main Form)</h3>
+                    <p style="color: var(--text-muted); margin: 0;">The primary text field where users describe their mood. Explain this is the core of discovery.</p>
+                </div>
+                <div class="mock-section">
+                    <h3 style="color: var(--star-bright); margin-bottom: var(--space-sm);">2. Discovery Arc Slider</h3>
+                    <p style="color: var(--text-muted); margin: 0;">The sun-to-moon arc that controls familiar vs. new. Show how it affects recommendations.</p>
+                </div>
+                <div class="mock-section">
+                    <h3 style="color: var(--star-bright); margin-bottom: var(--space-sm);">3. Swipe Cards (Discover Page)</h3>
+                    <p style="color: var(--text-muted); margin: 0;">Explain swipe gestures: right to add, left to pass, down for more options.</p>
+                </div>
+                <div class="mock-section">
+                    <h3 style="color: var(--star-bright); margin-bottom: var(--space-sm);">4. Build Playlist Button</h3>
+                    <p style="color: var(--text-muted); margin: 0;">Show the floating button that creates Spotify playlists from saved discoveries.</p>
+                </div>
+                <div class="mock-section">
+                    <h3 style="color: var(--star-bright); margin-bottom: var(--space-sm);">5. Completion / Celebration</h3>
+                    <p style="color: var(--text-muted); margin: 0;">End with encouragement. User is ready to discover music.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- ACCESSIBILITY & UX NOTES -->
+        <div class="demo-section">
+            <h2>Accessibility & UX Considerations</h2>
+            <div style="display: grid; gap: var(--space-md);">
+                <div style="background: rgba(30, 41, 59, 0.4); padding: var(--space-md); border-radius: var(--radius-sm); border-left: 3px solid var(--star-gold);">
+                    <strong>Keyboard Navigation:</strong> Tab cycles through tooltip buttons. ESC closes overlay. Enter/Space trigger buttons.
+                </div>
+                <div style="background: rgba(30, 41, 59, 0.4); padding: var(--space-md); border-radius: var(--radius-sm); border-left: 3px solid var(--star-gold);">
+                    <strong>Focus Management:</strong> When overlay opens, focus moves to first tooltip button. When closed, returns to trigger button.
+                </div>
+                <div style="background: rgba(30, 41, 59, 0.4); padding: var(--space-md); border-radius: var(--radius-sm); border-left: 3px solid var(--star-gold);">
+                    <strong>Screen Readers:</strong> Overlay has <code>role="dialog"</code>, <code>aria-modal="true"</code>, <code>aria-labelledby</code> pointing to tooltip title.
+                </div>
+                <div style="background: rgba(30, 41, 59, 0.4); padding: var(--space-md); border-radius: var(--radius-sm); border-left: 3px solid var(--star-gold);">
+                    <strong>Reduced Motion:</strong> If <code>prefers-reduced-motion</code> is set, disable animations (use instant transitions).
+                </div>
+                <div style="background: rgba(30, 41, 59, 0.4); padding: var(--space-md); border-radius: var(--radius-sm); border-left: 3px solid var(--star-gold);">
+                    <strong>Persistence:</strong> Store in localStorage: <code>onboardingComplete</code>, <code>onboardingSkipped</code>. Don't show again unless user clicks "Quick Start".
+                </div>
+                <div style="background: rgba(30, 41, 59, 0.4); padding: var(--space-md); border-radius: var(--radius-sm); border-left: 3px solid var(--star-gold);">
+                    <strong>Mobile Adaptation:</strong> Tooltip max-width adjusts on mobile. Touch events work for dismissal. Progress dots stay visible.
+                </div>
+            </div>
+        </div>
+
+        <!-- IMPLEMENTATION NOTES -->
+        <div class="demo-section">
+            <h2>Implementation Architecture</h2>
+            <p>Suggested file structure and approach for building this system:</p>
+            <div style="background: rgba(30, 41, 59, 0.6); padding: var(--space-lg); border-radius: var(--radius-md); margin-top: var(--space-lg); font-family: 'Courier New', monospace; font-size: 0.9em;">
+<pre style="margin: 0; color: var(--text-cream); line-height: 1.6;">
+/frontend/static/css/onboarding.css
+  - All styles for overlay, spotlight, tooltip
+  - Animations: pulse-glow, shine, tooltip-enter
+
+/frontend/static/js/onboarding.js
+  - OnboardingManager class
+  - Methods: start(), nextStep(), skipTour(), calculatePosition()
+  - Event handlers: keyboard, click, escape
+  - localStorage persistence
+
+/frontend/templates/partials/onboarding.html
+  - Overlay structure (backdrop, spotlight, tooltip)
+  - Can be included in base template
+
+Integration:
+  1. Add button to header nav with shining styles
+  2. Include onboarding.html partial
+  3. Initialize OnboardingManager on page load
+  4. Check localStorage - if not complete & first visit, auto-start
+  5. Steps defined as JSON config (target selector, title, description, position)
+</pre>
+            </div>
+        </div>
+
+        <!-- CLOSING -->
+        <div class="demo-section" style="text-align: center;">
+            <h2>Ready to Build</h2>
+            <p style="max-width: 600px; margin: 0 auto var(--space-lg);">
+                These mockups demonstrate the visual design and interaction flow. The spotlight system keeps users focused, tooltips are informative without being overwhelming, and the shining button naturally draws attention without being annoying.
+            </p>
+            <p style="color: var(--text-muted);">
+                The design extends Daily Jams' Starry Night aesthetic seamlessly while providing clear, intuitive guidance for new users.
+            </p>
+        </div>
+    </div>
+</body>
+</html>

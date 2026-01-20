@@ -127,7 +127,7 @@
    SPOTLIGHT
    ================= */
 .onboarding-spotlight {
-    position: absolute;
+    position: fixed;
     border: 3px solid var(--star-gold);
     border-radius: var(--radius-md);
     box-shadow:
@@ -164,7 +164,7 @@
    TOOLTIP CARD
    ================= */
 .onboarding-tooltip {
-    position: absolute;
+    position: fixed;
     max-width: 360px;
     padding: var(--space-lg);
     background: linear-gradient(135deg, var(--night-blue) 0%, var(--night-deep) 100%);
