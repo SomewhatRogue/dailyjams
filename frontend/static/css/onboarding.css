@@ -1,0 +1,402 @@
+/* ===================================
+   ONBOARDING SYSTEM - DAILYJAMS
+   Spotlight walkthrough with shine effects
+   =================================== */
+
+/* =================
+   TRIGGER BUTTON
+   ================= */
+.onboarding-trigger-btn {
+    display: flex;
+    align-items: center;
+    gap: var(--space-xs);
+    padding: 8px 16px;
+    background: linear-gradient(135deg, var(--star-gold) 0%, var(--star-bright) 100%);
+    color: var(--text-dark);
+    border: none;
+    border-radius: var(--radius-pill);
+    font-family: var(--font-body);
+    font-size: 0.9em;
+    font-weight: 600;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    animation: pulse-glow 2s ease-in-out infinite;
+    text-decoration: none;
+}
+
+.onboarding-trigger-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 20px rgba(251, 191, 36, 0.5);
+    animation: none;
+}
+
+.onboarding-trigger-btn .btn-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Shine sweep effect */
+.onboarding-trigger-btn::after {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -100%;
+    width: 50%;
+    height: 200%;
+    background: linear-gradient(
+        90deg,
+        transparent 0%,
+        rgba(255, 255, 255, 0.4) 50%,
+        transparent 100%
+    );
+    transform: skewX(-25deg);
+    animation: shine-sweep 3s ease-in-out infinite;
+}
+
+.onboarding-trigger-btn:hover::after {
+    animation: none;
+    opacity: 0;
+}
+
+@keyframes pulse-glow {
+    0%, 100% {
+        box-shadow: 0 0 10px rgba(251, 191, 36, 0.3);
+        transform: scale(1);
+    }
+    50% {
+        box-shadow: 0 0 25px rgba(251, 191, 36, 0.5);
+        transform: scale(1.02);
+    }
+}
+
+@keyframes shine-sweep {
+    0%, 100% {
+        left: -100%;
+    }
+    50% {
+        left: 150%;
+    }
+}
+
+/* After tour completed - no animation */
+.onboarding-trigger-btn.completed {
+    animation: none;
+}
+
+.onboarding-trigger-btn.completed::after {
+    animation: none;
+    opacity: 0;
+}
+
+/* =================
+   OVERLAY SYSTEM
+   ================= */
+.onboarding-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 9999;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.4s ease;
+}
+
+.onboarding-overlay.active {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+/* Backdrop */
+.onboarding-backdrop {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(15, 23, 42, 0.92);
+    backdrop-filter: blur(4px);
+    cursor: pointer;
+}
+
+/* =================
+   SPOTLIGHT
+   ================= */
+.onboarding-spotlight {
+    position: absolute;
+    border: 3px solid var(--star-gold);
+    border-radius: var(--radius-md);
+    box-shadow:
+        0 0 0 9999px rgba(15, 23, 42, 0.92),
+        inset 0 0 40px rgba(251, 191, 36, 0.15),
+        0 0 30px rgba(251, 191, 36, 0.3);
+    pointer-events: none;
+    transition: all 0.4s ease;
+    animation: spotlight-pulse 2s ease-in-out infinite;
+    z-index: 10000;
+}
+
+.onboarding-spotlight.hidden {
+    opacity: 0;
+    pointer-events: none;
+}
+
+@keyframes spotlight-pulse {
+    0%, 100% {
+        box-shadow:
+            0 0 0 9999px rgba(15, 23, 42, 0.92),
+            inset 0 0 40px rgba(251, 191, 36, 0.15),
+            0 0 30px rgba(251, 191, 36, 0.3);
+    }
+    50% {
+        box-shadow:
+            0 0 0 9999px rgba(15, 23, 42, 0.92),
+            inset 0 0 60px rgba(251, 191, 36, 0.25),
+            0 0 50px rgba(251, 191, 36, 0.5);
+    }
+}
+
+/* =================
+   TOOLTIP CARD
+   ================= */
+.onboarding-tooltip {
+    position: absolute;
+    max-width: 360px;
+    padding: var(--space-lg);
+    background: linear-gradient(135deg, var(--night-blue) 0%, var(--night-deep) 100%);
+    border: 2px solid var(--star-gold);
+    border-radius: var(--radius-lg);
+    box-shadow:
+        0 10px 40px rgba(0, 0, 0, 0.5),
+        0 0 30px rgba(251, 191, 36, 0.2);
+    z-index: 10001;
+    animation: tooltip-enter 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+.onboarding-tooltip.hidden {
+    opacity: 0;
+    pointer-events: none;
+}
+
+@keyframes tooltip-enter {
+    0% {
+        opacity: 0;
+        transform: translateY(20px) scale(0.9);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+/* Tooltip Arrow */
+.onboarding-tooltip::before {
+    content: '';
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    background: linear-gradient(135deg, var(--night-blue) 0%, var(--night-deep) 100%);
+    border: 2px solid var(--star-gold);
+    transform: rotate(45deg);
+}
+
+.onboarding-tooltip.arrow-top::before {
+    top: -12px;
+    left: 50%;
+    margin-left: -10px;
+    border-right: none;
+    border-bottom: none;
+}
+
+.onboarding-tooltip.arrow-bottom::before {
+    bottom: -12px;
+    left: 50%;
+    margin-left: -10px;
+    border-left: none;
+    border-top: none;
+}
+
+.onboarding-tooltip.arrow-left::before {
+    left: -12px;
+    top: 50%;
+    margin-top: -10px;
+    border-right: none;
+    border-top: none;
+}
+
+.onboarding-tooltip.arrow-right::before {
+    right: -12px;
+    top: 50%;
+    margin-top: -10px;
+    border-left: none;
+    border-bottom: none;
+}
+
+.onboarding-tooltip.no-arrow::before {
+    display: none;
+}
+
+/* Step Indicator */
+.tooltip-step {
+    font-size: 0.85em;
+    font-weight: 600;
+    color: var(--star-gold);
+    margin-bottom: var(--space-xs);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* Title */
+.tooltip-title {
+    font-family: var(--font-heading);
+    font-size: 1.4em;
+    font-weight: 600;
+    color: var(--star-bright);
+    margin-bottom: var(--space-sm);
+    text-shadow: 0 0 20px rgba(253, 224, 71, 0.3);
+}
+
+/* Description */
+.tooltip-description {
+    font-size: 1em;
+    color: var(--text-cream);
+    line-height: 1.6;
+    margin-bottom: var(--space-lg);
+}
+
+/* =================
+   TOOLTIP BUTTONS
+   ================= */
+.tooltip-buttons {
+    display: flex;
+    gap: var(--space-sm);
+    margin-bottom: var(--space-md);
+}
+
+.tooltip-btn {
+    flex: 1;
+    padding: 12px 20px;
+    border-radius: var(--radius-md);
+    font-family: var(--font-body);
+    font-size: 0.95em;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-xs);
+}
+
+.tooltip-btn-skip {
+    background: transparent;
+    color: var(--text-muted);
+    border: 1px solid rgba(96, 165, 250, 0.3);
+}
+
+.tooltip-btn-skip:hover {
+    background: rgba(96, 165, 250, 0.1);
+    border-color: rgba(96, 165, 250, 0.5);
+    color: var(--text-cream);
+}
+
+.tooltip-btn-next {
+    background: linear-gradient(135deg, var(--star-gold) 0%, var(--star-bright) 100%);
+    color: var(--text-dark);
+    border: none;
+    box-shadow: 0 0 15px rgba(251, 191, 36, 0.3);
+}
+
+.tooltip-btn-next:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 20px rgba(251, 191, 36, 0.5);
+}
+
+/* =================
+   PROGRESS DOTS
+   ================= */
+.tooltip-progress {
+    display: flex;
+    justify-content: center;
+    gap: 6px;
+}
+
+.progress-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: rgba(96, 165, 250, 0.3);
+    transition: all 0.3s ease;
+}
+
+.progress-dot.active {
+    background: var(--star-gold);
+    box-shadow: 0 0 10px rgba(251, 191, 36, 0.5);
+}
+
+.progress-dot.completed {
+    background: var(--star-gold);
+}
+
+/* =================
+   ACCESSIBILITY
+   ================= */
+@media (prefers-reduced-motion: reduce) {
+    .onboarding-trigger-btn,
+    .onboarding-trigger-btn::after,
+    .onboarding-spotlight,
+    .onboarding-tooltip {
+        animation: none !important;
+        transition-duration: 0.01ms !important;
+    }
+}
+
+/* Focus states for keyboard navigation */
+.tooltip-btn:focus {
+    outline: 2px solid var(--star-gold);
+    outline-offset: 2px;
+}
+
+.onboarding-trigger-btn:focus {
+    outline: 2px solid var(--star-bright);
+    outline-offset: 2px;
+}
+
+/* =================
+   RESPONSIVE
+   ================= */
+@media (max-width: 768px) {
+    .onboarding-tooltip {
+        max-width: 90vw;
+        left: 5vw !important;
+        right: 5vw !important;
+    }
+}
+
+@media (max-width: 480px) {
+    .onboarding-tooltip {
+        max-width: calc(100vw - 32px);
+        padding: var(--space-md);
+    }
+
+    .tooltip-title {
+        font-size: 1.2em;
+    }
+
+    .tooltip-description {
+        font-size: 0.95em;
+    }
+
+    .tooltip-buttons {
+        flex-direction: column;
+    }
+
+    .progress-dot {
+        width: 6px;
+        height: 6px;
+    }
+}

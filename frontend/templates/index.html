@@ -8,6 +8,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/onboarding.css') }}">
 </head>
 <body>
     <div class="container">
@@ -15,6 +16,16 @@
             <h1>DailyJams</h1>
             <p class="tagline">Discover music based on your vibe</p>
             <div class="header-links">
+                <button class="onboarding-trigger-btn" aria-label="Start quick tour">
+                    <span class="btn-icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="10"/>
+                            <circle cx="12" cy="12" r="6"/>
+                            <circle cx="12" cy="12" r="2"/>
+                        </svg>
+                    </span>
+                    Quick Start
+                </button>
                 <a href="/users" class="current-user-indicator" title="Switch User">
                     <span class="user-avatar-small" id="header-avatar">?</span>
                     <span class="user-name-display" id="header-username">Loading...</span>
@@ -333,5 +344,6 @@
     </div>
 
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/onboarding.js') }}"></script>
 </body>
 </html>
