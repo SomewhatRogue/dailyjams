@@ -1,6 +1,7 @@
 import sqlite3
 import os
 from datetime import datetime
+from werkzeug.security import generate_password_hash, check_password_hash
 
 # Database file path
 DB_PATH = os.path.join(os.path.dirname(__file__), '../data/dailyjams.db')
@@ -221,6 +222,29 @@ def migrate_add_user_source_preferences():
     conn.close()
     print("✅ Per-user source preferences migration complete!")
 
+
+def migrate_add_pin_support():
+    """Migration: Add PIN hash column to users table for authentication."""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    # Check if migration is needed
+    cursor.execute("PRAGMA table_info(users)")
+    columns = [col[1] for col in cursor.fetchall()]
+
+    if 'pin_hash' in columns:
+        conn.close()
+        return  # Already migrated
+
+    print("🔄 Running PIN support migration...")
+
+    # Add pin_hash column to users table
+    cursor.execute('ALTER TABLE users ADD COLUMN pin_hash TEXT')
+
+    conn.commit()
+    conn.close()
+    print("✅ PIN support migration complete!")
+
 def migrate_add_user_support():
     """Migration: Add user_id columns and create default user."""
     conn = get_db_connection()
@@ -279,15 +303,18 @@ def migrate_add_user_support():
 
 # User CRUD Functions
 
-def create_user(name, avatar_color='#2980b9'):
-    """Create a new user profile."""
+def create_user(name, avatar_color='#2980b9', pin=None):
+    """Create a new user profile with optional PIN."""
     conn = get_db_connection()
     cursor = conn.cursor()
 
     try:
+        # Hash the PIN if provided
+        pin_hash = generate_password_hash(pin) if pin else None
+
         cursor.execute('''
-            INSERT INTO users (name, avatar_color) VALUES (?, ?)
-        ''', (name, avatar_color))
+            INSERT INTO users (name, avatar_color, pin_hash) VALUES (?, ?, ?)
+        ''', (name, avatar_color, pin_hash))
         user_id = cursor.lastrowid
         conn.commit()
         conn.close()
@@ -297,15 +324,20 @@ def create_user(name, avatar_color='#2980b9'):
         return None  # Name already exists
 
 def get_all_users():
-    """Get all user profiles."""
+    """Get all user profiles with PIN status."""
     conn = get_db_connection()
     cursor = conn.cursor()
 
     cursor.execute('''
-        SELECT id, name, avatar_color, created_at FROM users ORDER BY created_at
+        SELECT id, name, avatar_color, created_at, pin_hash IS NOT NULL as has_pin
+        FROM users ORDER BY created_at
     ''')
 
-    users = [dict(row) for row in cursor.fetchall()]
+    users = []
+    for row in cursor.fetchall():
+        user = dict(row)
+        user['has_pin'] = bool(user['has_pin'])
+        users.append(user)
     conn.close()
     return users
 
@@ -321,6 +353,65 @@ def get_user_by_id(user_id):
     row = cursor.fetchone()
     conn.close()
     return dict(row) if row else None
+
+
+def get_user_with_pin_status(user_id):
+    """Get a user by ID including whether they have a PIN set."""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    cursor.execute('''
+        SELECT id, name, avatar_color, created_at, pin_hash IS NOT NULL as has_pin
+        FROM users WHERE id = ?
+    ''', (user_id,))
+
+    row = cursor.fetchone()
+    conn.close()
+    if row:
+        user = dict(row)
+        user['has_pin'] = bool(user['has_pin'])
+        return user
+    return None
+
+
+def verify_user_pin(user_id, pin):
+    """Verify a user's PIN. Returns True if correct, False otherwise."""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    cursor.execute('SELECT pin_hash FROM users WHERE id = ?', (user_id,))
+    row = cursor.fetchone()
+    conn.close()
+
+    if not row or not row['pin_hash']:
+        return False
+
+    return check_password_hash(row['pin_hash'], pin)
+
+
+def set_user_pin(user_id, pin):
+    """Set or update a user's PIN."""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    pin_hash = generate_password_hash(pin)
+    cursor.execute('UPDATE users SET pin_hash = ? WHERE id = ?', (pin_hash, user_id))
+
+    conn.commit()
+    conn.close()
+    return True
+
+
+def user_has_pin(user_id):
+    """Check if a user has a PIN set."""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    cursor.execute('SELECT pin_hash FROM users WHERE id = ?', (user_id,))
+    row = cursor.fetchone()
+    conn.close()
+
+    return row is not None and row['pin_hash'] is not None
 
 def delete_user(user_id):
     """Delete a user and all their data."""
@@ -837,6 +928,7 @@ def update_playlist_track_count(playlist_id, additional_tracks):
 
 def save_spotify_auth(user_id, token_info, spotify_user_info):
     """Save Spotify authentication data for a user."""
+    print(f"[save_spotify_auth] Called with user_id={user_id}, spotify_user={spotify_user_info.get('id')}, display_name={spotify_user_info.get('display_name')}", flush=True)
     conn = get_db_connection()
     cursor = conn.cursor()
 
@@ -857,6 +949,9 @@ def save_spotify_auth(user_id, token_info, spotify_user_info):
         token_info.get('expires_at'),
         user_id
     ))
+
+    rows_affected = cursor.rowcount
+    print(f"[save_spotify_auth] UPDATE affected {rows_affected} rows", flush=True)
 
     conn.commit()
     conn.close()
@@ -885,6 +980,31 @@ def get_spotify_auth(user_id):
             'spotify_connected_at': row['spotify_connected_at']
         }
     return None
+
+def get_user_by_spotify_id(spotify_user_id):
+    """Check if a Spotify account is already connected to any user.
+
+    Returns the user dict if found, None otherwise.
+    """
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    cursor.execute('''
+        SELECT id, name, spotify_user_id FROM users
+        WHERE spotify_user_id = ?
+    ''', (spotify_user_id,))
+
+    row = cursor.fetchone()
+    conn.close()
+
+    if row:
+        return {
+            'id': row['id'],
+            'name': row['name'],
+            'spotify_user_id': row['spotify_user_id']
+        }
+    return None
+
 
 def update_spotify_token(user_id, token_info):
     """Update Spotify tokens after refresh."""

@@ -14,6 +14,7 @@ let spotifyAuthenticated = false;
 // Initialize when page loads
 document.addEventListener('DOMContentLoaded', function() {
     loadCurrentUser();
+    initializeLockButton();
     loadHistory();
     initializeFilters();
     initializeSearch();
@@ -21,6 +22,28 @@ document.addEventListener('DOMContentLoaded', function() {
     checkSpotifyAuth();
     restorePlaylistSelectionsAfterOAuth();
 });
+
+// Initialize lock button handler
+function initializeLockButton() {
+    const lockBtn = document.getElementById('lock-btn');
+    if (lockBtn) {
+        lockBtn.addEventListener('click', lockProfile);
+    }
+}
+
+// Lock profile and return to user selection
+async function lockProfile() {
+    try {
+        const response = await fetch('/api/users/lock', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+        });
+        window.location.href = '/users';
+    } catch (error) {
+        console.error('Error locking profile:', error);
+        window.location.href = '/users';
+    }
+}
 
 // Load and display current user in header
 async function loadCurrentUser() {
@@ -328,12 +351,94 @@ function initializeChangeRatingButtons() {
 // Check Spotify Authentication Status
 async function checkSpotifyAuth() {
     try {
-        const response = await fetch('/api/spotify/auth-status');
+        const response = await fetch('/api/spotify/status');
         const data = await response.json();
-        spotifyAuthenticated = data.authenticated || false;
+
+        if (data.success && data.connected) {
+            spotifyAuthenticated = true;
+            updateHeaderSpotifyStatus(true, data.spotify_display_name, data.taste_synced);
+        } else {
+            spotifyAuthenticated = false;
+            updateHeaderSpotifyStatus(false);
+        }
     } catch (error) {
         console.error('Error checking Spotify auth:', error);
         spotifyAuthenticated = false;
+        updateHeaderSpotifyStatus(false);
+    }
+}
+
+// Update Spotify status display in header
+function updateHeaderSpotifyStatus(connected, displayName = null, tasteSynced = false) {
+    const indicator = document.getElementById('spotify-indicator');
+    const statusText = document.getElementById('spotify-status-text');
+    const actionBtn = document.getElementById('spotify-action-btn');
+
+    if (!indicator || !statusText || !actionBtn) return;
+
+    if (connected) {
+        indicator.className = 'spotify-status-indicator connected';
+        statusText.textContent = displayName || 'Connected';
+        actionBtn.textContent = 'Re-sync';
+        actionBtn.className = 'spotify-action-btn';
+        actionBtn.style.display = 'inline-block';
+        actionBtn.onclick = handleSpotifyResync;
+    } else {
+        indicator.className = 'spotify-status-indicator disconnected';
+        statusText.textContent = 'Not connected';
+        actionBtn.textContent = 'Connect';
+        actionBtn.className = 'spotify-action-btn connect';
+        actionBtn.style.display = 'inline-block';
+        actionBtn.onclick = handleSpotifyConnect;
+    }
+}
+
+// Handle Spotify re-sync button click
+async function handleSpotifyResync() {
+    const actionBtn = document.getElementById('spotify-action-btn');
+    const originalText = actionBtn.textContent;
+    actionBtn.textContent = 'Syncing...';
+    actionBtn.disabled = true;
+
+    try {
+        const response = await fetch('/api/spotify/sync', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+        });
+        const data = await response.json();
+
+        if (data.success) {
+            actionBtn.textContent = 'Synced!';
+            setTimeout(() => {
+                actionBtn.textContent = 'Re-sync';
+                actionBtn.disabled = false;
+            }, 2000);
+        } else {
+            alert('Sync failed: ' + (data.error || 'Unknown error'));
+            actionBtn.textContent = originalText;
+            actionBtn.disabled = false;
+        }
+    } catch (error) {
+        console.error('Error syncing Spotify:', error);
+        alert('Error syncing: ' + error.message);
+        actionBtn.textContent = originalText;
+        actionBtn.disabled = false;
+    }
+}
+
+// Handle Spotify connect button click
+async function handleSpotifyConnect() {
+    try {
+        const response = await fetch('/api/spotify/login?return_page=' + encodeURIComponent(window.location.pathname));
+        const data = await response.json();
+
+        if (data.success) {
+            window.location.href = data.auth_url;
+        } else {
+            alert('Error initiating Spotify login: ' + data.error);
+        }
+    } catch (error) {
+        alert('Error: ' + error.message);
     }
 }
 

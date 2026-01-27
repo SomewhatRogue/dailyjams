@@ -8,6 +8,7 @@ let spotifyAuthChecked = false;  // Track if auth check is complete
 // Initialize when page loads
 document.addEventListener('DOMContentLoaded', function() {
     loadCurrentUser(); // Load and display current user in header
+    initializeLockButton(); // Lock button handler
     initializeTimeButtons();
     initializeInstrumentToggles();
     initializeTempoSlider();
@@ -17,7 +18,57 @@ document.addEventListener('DOMContentLoaded', function() {
     restoreRecommendations(); // Restore recommendations from previous session
     checkSpotifyAuth(); // Check if user is authenticated with Spotify
     restorePlaylistSelections(); // Restore playlist selections after OAuth
+    checkSpotifyConnectionResult(); // Handle Spotify OAuth result messages
 });
+
+// Check URL for Spotify connection result
+function checkSpotifyConnectionResult() {
+    const params = new URLSearchParams(window.location.search);
+    const spotifyResult = params.get('spotify');
+
+    if (spotifyResult === 'already_connected') {
+        const existingUser = params.get('existing_user') || 'another user';
+        alert(`This Spotify account is already connected to "${existingUser}".\n\nTo connect a different Spotify account:\n1. On the Spotify authorization page, click "Not you?" to log out\n2. Then log in with the Spotify account you want to use`);
+        window.history.replaceState({}, '', window.location.pathname);
+    } else if (spotifyResult === 'connected') {
+        window.history.replaceState({}, '', window.location.pathname);
+    } else if (spotifyResult === 'error') {
+        alert('Failed to connect Spotify. Please try again from Settings.');
+        window.history.replaceState({}, '', window.location.pathname);
+    }
+}
+
+// Initialize lock button handler
+function initializeLockButton() {
+    const lockBtn = document.getElementById('lock-btn');
+    if (lockBtn) {
+        lockBtn.addEventListener('click', lockProfile);
+    }
+}
+
+// Lock profile and return to user selection
+async function lockProfile() {
+    try {
+        const response = await fetch('/api/users/lock', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            window.location.href = '/users';
+        } else {
+            console.error('Error locking profile:', data.error);
+            // Still redirect to users page
+            window.location.href = '/users';
+        }
+    } catch (error) {
+        console.error('Error locking profile:', error);
+        // Still redirect to users page
+        window.location.href = '/users';
+    }
+}
 
 // Load and display current user in header
 async function loadCurrentUser() {
@@ -79,27 +130,32 @@ function initializeTimeButtons() {
 // Instrument Toggle Buttons
 function initializeInstrumentToggles() {
     const toggleButtons = document.querySelectorAll('.toggle-btn');
-    
+
+    // SVG icons for toggle states
+    const checkIcon = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>';
+    const xIcon = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>';
+    const minusIcon = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line></svg>';
+
     toggleButtons.forEach(button => {
         button.addEventListener('click', function() {
             const instrument = this.getAttribute('data-instrument');
             let currentState = this.getAttribute('data-state');
-            
+
             if (currentState === 'neutral') {
                 currentState = 'yes';
                 this.classList.add('yes');
-                this.textContent = '✓';
+                this.innerHTML = checkIcon;
                 instrumentPreferences[instrument] = 'yes';
             } else if (currentState === 'yes') {
                 currentState = 'no';
                 this.classList.remove('yes');
                 this.classList.add('no');
-                this.textContent = '✗';
+                this.innerHTML = xIcon;
                 instrumentPreferences[instrument] = 'no';
             } else {
                 currentState = 'neutral';
                 this.classList.remove('no');
-                this.textContent = '—';
+                this.innerHTML = minusIcon;
                 delete instrumentPreferences[instrument];
             }
             
@@ -516,19 +572,98 @@ async function checkSpotifyAuth() {
 
             // Update discovery info tooltip
             updateDiscoveryInfoStatus(true, data.spotify_display_name, data.taste_synced);
+
+            // Update header Spotify status
+            updateHeaderSpotifyStatus(true, data.spotify_display_name, data.taste_synced);
         } else {
             spotifyAuthenticated = false;
             updateDiscoveryInfoStatus(false);
+            updateHeaderSpotifyStatus(false);
         }
     } catch (error) {
         console.error('Error checking Spotify auth:', error);
         spotifyAuthenticated = false;
         updateDiscoveryInfoStatus(false);
+        updateHeaderSpotifyStatus(false);
     } finally {
         spotifyAuthChecked = true;
 
         // Check if we need to show modal after OAuth redirect
         checkPendingPlaylistModal();
+    }
+}
+
+// Update Spotify status display in header
+function updateHeaderSpotifyStatus(connected, displayName = null, tasteSynced = false) {
+    const indicator = document.getElementById('spotify-indicator');
+    const statusText = document.getElementById('spotify-status-text');
+    const actionBtn = document.getElementById('spotify-action-btn');
+
+    if (!indicator || !statusText || !actionBtn) return;
+
+    if (connected) {
+        indicator.className = 'spotify-status-indicator connected';
+        statusText.textContent = displayName || 'Connected';
+        actionBtn.textContent = 'Re-sync';
+        actionBtn.className = 'spotify-action-btn';
+        actionBtn.style.display = 'inline-block';
+        actionBtn.onclick = handleSpotifyResync;
+    } else {
+        indicator.className = 'spotify-status-indicator disconnected';
+        statusText.textContent = 'Not connected';
+        actionBtn.textContent = 'Connect';
+        actionBtn.className = 'spotify-action-btn connect';
+        actionBtn.style.display = 'inline-block';
+        actionBtn.onclick = handleSpotifyConnect;
+    }
+}
+
+// Handle Spotify re-sync button click
+async function handleSpotifyResync() {
+    const actionBtn = document.getElementById('spotify-action-btn');
+    const originalText = actionBtn.textContent;
+    actionBtn.textContent = 'Syncing...';
+    actionBtn.disabled = true;
+
+    try {
+        const response = await fetch('/api/spotify/sync', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+        });
+        const data = await response.json();
+
+        if (data.success) {
+            actionBtn.textContent = 'Synced!';
+            setTimeout(() => {
+                actionBtn.textContent = 'Re-sync';
+                actionBtn.disabled = false;
+            }, 2000);
+        } else {
+            alert('Sync failed: ' + (data.error || 'Unknown error'));
+            actionBtn.textContent = originalText;
+            actionBtn.disabled = false;
+        }
+    } catch (error) {
+        console.error('Error syncing Spotify:', error);
+        alert('Error syncing: ' + error.message);
+        actionBtn.textContent = originalText;
+        actionBtn.disabled = false;
+    }
+}
+
+// Handle Spotify connect button click
+async function handleSpotifyConnect() {
+    try {
+        const response = await fetch('/api/spotify/login?return_page=' + encodeURIComponent(window.location.pathname));
+        const data = await response.json();
+
+        if (data.success) {
+            window.location.href = data.auth_url;
+        } else {
+            alert('Error initiating Spotify login: ' + data.error);
+        }
+    } catch (error) {
+        alert('Error: ' + error.message);
     }
 }
 
@@ -550,12 +685,14 @@ function updateDiscoveryInfoStatus(connected, displayName = null, tasteSynced = 
     const statusEl = document.getElementById('discovery-info-spotify-status');
     if (!statusEl) return;
 
+    const checkIcon = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;"><polyline points="20 6 9 17 4 12"></polyline></svg>';
+
     if (connected) {
         statusEl.className = 'discovery-info-status connected';
         if (tasteSynced) {
-            statusEl.innerHTML = `<strong>✓ Spotify connected</strong> as ${displayName}<br><small>Taste data synced</small>`;
+            statusEl.innerHTML = `<strong>${checkIcon} Spotify connected</strong> as ${displayName}<br><small>Taste data synced</small>`;
         } else {
-            statusEl.innerHTML = `<strong>✓ Spotify connected</strong> as ${displayName}<br><small>Sync taste data in <a href="/profile" style="color: inherit; text-decoration: underline;">Settings</a> for better recommendations</small>`;
+            statusEl.innerHTML = `<strong>${checkIcon} Spotify connected</strong> as ${displayName}<br><small>Sync taste data in <a href="/profile" style="color: inherit; text-decoration: underline;">Settings</a> for better recommendations</small>`;
         }
     } else {
         statusEl.className = 'discovery-info-status disconnected';

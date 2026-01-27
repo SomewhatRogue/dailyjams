@@ -23,12 +23,13 @@ def get_spotify_oauth(force_new_auth=False):
         force_new_auth: If True, forces Spotify to show login dialog
                        (use when connecting a new user)
     """
+    from spotipy.cache_handler import MemoryCacheHandler
     return SpotifyOAuth(
         client_id=SPOTIFY_CLIENT_ID,
         client_secret=SPOTIFY_CLIENT_SECRET,
         redirect_uri=SPOTIFY_REDIRECT_URI,
         scope=SCOPE,
-        cache_path=None,  # No file cache - we use database per-user
+        cache_handler=MemoryCacheHandler(),  # No file cache - use memory only
         show_dialog=force_new_auth  # Force login dialog for new connections
     )
 
@@ -57,12 +58,8 @@ def get_spotify_client(token_info=None, user_id=None):
         if token_info is not None:
             return spotipy.Spotify(auth=token_info['access_token'])
 
-        # Priority 3: Fallback to file cache (legacy)
-        sp_oauth = get_spotify_oauth()
-        cached_token = sp_oauth.get_cached_token()
-        if cached_token:
-            return spotipy.Spotify(auth=cached_token['access_token'])
-
+        # No user_id or token_info provided - can't authenticate
+        # Note: Removed legacy file cache fallback as it caused cross-user contamination
         return None
     except Exception as e:
         print(f"Error creating Spotify client: {str(e)}")

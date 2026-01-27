@@ -5,12 +5,59 @@ let hasChanges = false;
 // Initialize when page loads
 document.addEventListener('DOMContentLoaded', function() {
     loadCurrentUser();
+    initializeLockButton();
+    initializeChangePinButton();
     loadSources();
     loadSpotifyStatus();
     initializeSaveButton();
     initializeAddSourceButton();
     initializeSpotifyButtons();
+    checkSpotifyConnectionResult();
 });
+
+// Check URL for Spotify connection result
+function checkSpotifyConnectionResult() {
+    const params = new URLSearchParams(window.location.search);
+    const spotifyResult = params.get('spotify');
+
+    if (spotifyResult === 'already_connected') {
+        const existingUser = params.get('existing_user') || 'another user';
+        alert(`This Spotify account is already connected to "${existingUser}".\n\nTo connect a different Spotify account:\n1. On the Spotify authorization page, click "Not you?" to log out\n2. Then log in with the Spotify account you want to use\n\nOr disconnect Spotify from the other profile first.`);
+        // Clean up URL
+        window.history.replaceState({}, '', window.location.pathname);
+    } else if (spotifyResult === 'connected') {
+        // Clean up URL
+        window.history.replaceState({}, '', window.location.pathname);
+    } else if (spotifyResult === 'error') {
+        alert('Failed to connect Spotify. Please try again.');
+        window.history.replaceState({}, '', window.location.pathname);
+    } else if (spotifyResult === 'cancelled') {
+        // User cancelled, just clean up URL
+        window.history.replaceState({}, '', window.location.pathname);
+    }
+}
+
+// Initialize lock button handler
+function initializeLockButton() {
+    const lockBtn = document.getElementById('lock-btn');
+    if (lockBtn) {
+        lockBtn.addEventListener('click', lockProfile);
+    }
+}
+
+// Lock profile and return to user selection
+async function lockProfile() {
+    try {
+        const response = await fetch('/api/users/lock', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+        });
+        window.location.href = '/users';
+    } catch (error) {
+        console.error('Error locking profile:', error);
+        window.location.href = '/users';
+    }
+}
 
 // Load and display current user in header
 async function loadCurrentUser() {
@@ -148,7 +195,7 @@ async function deleteSource(sourceId) {
             
             // Show success message
             const statusEl = document.getElementById('save-status');
-            statusEl.textContent = '✓ Source deleted!';
+            statusEl.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;"><polyline points="20 6 9 17 4 12"></polyline></svg> Source deleted!';
             statusEl.className = 'save-status success';
             
             setTimeout(() => {
@@ -179,7 +226,7 @@ function initializeAddSourceButton() {
         
         // Validate
         if (!sourceName) {
-            statusEl.textContent = '✗ Source name is required';
+            statusEl.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg> Source name is required';
             statusEl.className = 'add-status error';
             return;
         }
@@ -210,7 +257,7 @@ function initializeAddSourceButton() {
                 descInput.value = '';
                 
                 // Show success
-                statusEl.textContent = '✓ Source added successfully!';
+                statusEl.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;"><polyline points="20 6 9 17 4 12"></polyline></svg> Source added successfully!';
                 statusEl.className = 'add-status success';
                 
                 // Reload sources
@@ -221,12 +268,12 @@ function initializeAddSourceButton() {
                     statusEl.textContent = '';
                 }, 3000);
             } else {
-                statusEl.textContent = '✗ ' + data.error;
+                statusEl.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg> ' + data.error;
                 statusEl.className = 'add-status error';
             }
         } catch (error) {
             console.error('Error:', error);
-            statusEl.textContent = '✗ Failed to add source';
+            statusEl.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg> Failed to add source';
             statusEl.className = 'add-status error';
         }
     });
@@ -261,7 +308,7 @@ function initializeSaveButton() {
             await Promise.all(promises);
             
             // Show success
-            statusEl.textContent = '✓ Saved successfully!';
+            statusEl.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;"><polyline points="20 6 9 17 4 12"></polyline></svg> Saved successfully!';
             statusEl.className = 'save-status success';
             
             // Disable save button
@@ -275,7 +322,7 @@ function initializeSaveButton() {
 
         } catch (error) {
             console.error('Error:', error);
-            statusEl.textContent = '✗ Failed to save';
+            statusEl.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg> Failed to save';
             statusEl.className = 'save-status error';
         }
     });
@@ -305,14 +352,95 @@ async function loadSpotifyStatus() {
 
             // Update sync status
             updateSyncStatus(data.taste_synced, data.last_sync);
+
+            // Update header Spotify status
+            updateHeaderSpotifyStatus(true, data.spotify_display_name, data.taste_synced);
         } else {
             // User is not connected
             disconnectedEl.classList.remove('hidden');
+            updateHeaderSpotifyStatus(false);
         }
     } catch (error) {
         console.error('Error loading Spotify status:', error);
         loadingEl.classList.add('hidden');
         disconnectedEl.classList.remove('hidden');
+        updateHeaderSpotifyStatus(false);
+    }
+}
+
+// Update Spotify status display in header
+function updateHeaderSpotifyStatus(connected, displayName = null, tasteSynced = false) {
+    const indicator = document.getElementById('spotify-indicator');
+    const statusText = document.getElementById('spotify-status-text');
+    const actionBtn = document.getElementById('spotify-action-btn');
+
+    if (!indicator || !statusText || !actionBtn) return;
+
+    if (connected) {
+        indicator.className = 'spotify-status-indicator connected';
+        statusText.textContent = displayName || 'Connected';
+        actionBtn.textContent = 'Re-sync';
+        actionBtn.className = 'spotify-action-btn';
+        actionBtn.style.display = 'inline-block';
+        actionBtn.onclick = handleHeaderSpotifyResync;
+    } else {
+        indicator.className = 'spotify-status-indicator disconnected';
+        statusText.textContent = 'Not connected';
+        actionBtn.textContent = 'Connect';
+        actionBtn.className = 'spotify-action-btn connect';
+        actionBtn.style.display = 'inline-block';
+        actionBtn.onclick = handleHeaderSpotifyConnect;
+    }
+}
+
+// Handle Spotify re-sync button click in header
+async function handleHeaderSpotifyResync() {
+    const actionBtn = document.getElementById('spotify-action-btn');
+    const originalText = actionBtn.textContent;
+    actionBtn.textContent = 'Syncing...';
+    actionBtn.disabled = true;
+
+    try {
+        const response = await fetch('/api/spotify/sync', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+        });
+        const data = await response.json();
+
+        if (data.success) {
+            actionBtn.textContent = 'Synced!';
+            // Also refresh the main Spotify status section
+            loadSpotifyStatus();
+            setTimeout(() => {
+                actionBtn.textContent = 'Re-sync';
+                actionBtn.disabled = false;
+            }, 2000);
+        } else {
+            alert('Sync failed: ' + (data.error || 'Unknown error'));
+            actionBtn.textContent = originalText;
+            actionBtn.disabled = false;
+        }
+    } catch (error) {
+        console.error('Error syncing Spotify:', error);
+        alert('Error syncing: ' + error.message);
+        actionBtn.textContent = originalText;
+        actionBtn.disabled = false;
+    }
+}
+
+// Handle Spotify connect button click in header
+async function handleHeaderSpotifyConnect() {
+    try {
+        const response = await fetch('/api/spotify/login?return_page=' + encodeURIComponent(window.location.pathname));
+        const data = await response.json();
+
+        if (data.success) {
+            window.location.href = data.auth_url;
+        } else {
+            alert('Error initiating Spotify login: ' + data.error);
+        }
+    } catch (error) {
+        alert('Error: ' + error.message);
     }
 }
 
@@ -458,5 +586,143 @@ async function syncSpotifyTaste() {
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M16 16h5v5"/></svg>
             Sync Taste Data
         `;
+    }
+}
+
+// ============ Change PIN Functions ============
+
+// Initialize Change PIN button
+function initializeChangePinButton() {
+    const changePinBtn = document.getElementById('change-pin-btn');
+    if (changePinBtn) {
+        changePinBtn.addEventListener('click', showChangePinModal);
+    }
+
+    // Modal buttons
+    const cancelBtn = document.getElementById('cancel-change-pin');
+    if (cancelBtn) {
+        cancelBtn.addEventListener('click', hideChangePinModal);
+    }
+
+    const submitBtn = document.getElementById('submit-change-pin');
+    if (submitBtn) {
+        submitBtn.addEventListener('click', submitChangePin);
+    }
+
+    // Allow Enter key to submit
+    const confirmInput = document.getElementById('confirm-new-pin-input');
+    if (confirmInput) {
+        confirmInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                submitChangePin();
+            }
+        });
+    }
+
+    // Close modal on background click
+    const modal = document.getElementById('change-pin-modal');
+    if (modal) {
+        modal.addEventListener('click', function(e) {
+            if (e.target === this) {
+                hideChangePinModal();
+            }
+        });
+    }
+}
+
+// Show Change PIN modal
+function showChangePinModal() {
+    document.getElementById('current-pin-input').value = '';
+    document.getElementById('new-pin-input').value = '';
+    document.getElementById('confirm-new-pin-input').value = '';
+    document.getElementById('change-pin-error').classList.add('hidden');
+    document.getElementById('change-pin-success').classList.add('hidden');
+    document.getElementById('change-pin-modal').classList.remove('hidden');
+    setTimeout(() => document.getElementById('current-pin-input').focus(), 100);
+}
+
+// Hide Change PIN modal
+function hideChangePinModal() {
+    document.getElementById('change-pin-modal').classList.add('hidden');
+}
+
+// Submit Change PIN
+async function submitChangePin() {
+    const currentPin = document.getElementById('current-pin-input').value;
+    const newPin = document.getElementById('new-pin-input').value;
+    const confirmPin = document.getElementById('confirm-new-pin-input').value;
+    const errorEl = document.getElementById('change-pin-error');
+    const successEl = document.getElementById('change-pin-success');
+
+    // Reset messages
+    errorEl.classList.add('hidden');
+    successEl.classList.add('hidden');
+
+    // Validate current PIN
+    if (currentPin.length !== 4 || !/^\d{4}$/.test(currentPin)) {
+        errorEl.textContent = 'Current PIN must be 4 digits.';
+        errorEl.classList.remove('hidden');
+        return;
+    }
+
+    // Validate new PIN
+    if (newPin.length !== 4 || !/^\d{4}$/.test(newPin)) {
+        errorEl.textContent = 'New PIN must be 4 digits.';
+        errorEl.classList.remove('hidden');
+        return;
+    }
+
+    // Check PINs match
+    if (newPin !== confirmPin) {
+        errorEl.textContent = 'New PINs do not match.';
+        errorEl.classList.remove('hidden');
+        document.querySelector('#change-pin-modal .pin-modal-content').classList.add('shake');
+        setTimeout(() => {
+            document.querySelector('#change-pin-modal .pin-modal-content').classList.remove('shake');
+        }, 500);
+        return;
+    }
+
+    // Check not same as current
+    if (newPin === currentPin) {
+        errorEl.textContent = 'New PIN must be different from current PIN.';
+        errorEl.classList.remove('hidden');
+        return;
+    }
+
+    try {
+        const response = await fetch('/api/users/change-pin', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                current_pin: currentPin,
+                new_pin: newPin
+            })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            successEl.classList.remove('hidden');
+            // Close modal after short delay
+            setTimeout(() => {
+                hideChangePinModal();
+            }, 1500);
+        } else {
+            errorEl.textContent = data.error || 'Failed to change PIN';
+            errorEl.classList.remove('hidden');
+            if (data.error === 'Current PIN is incorrect') {
+                document.querySelector('#change-pin-modal .pin-modal-content').classList.add('shake');
+                setTimeout(() => {
+                    document.querySelector('#change-pin-modal .pin-modal-content').classList.remove('shake');
+                }, 500);
+                document.getElementById('current-pin-input').value = '';
+                document.getElementById('current-pin-input').focus();
+            }
+        }
+    } catch (error) {
+        console.error('Error changing PIN:', error);
+        errorEl.textContent = 'Error changing PIN. Please try again.';
+        errorEl.classList.remove('hidden');
     }
 }

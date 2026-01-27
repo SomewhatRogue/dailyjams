@@ -34,6 +34,23 @@
     --text-muted: #d1d5db;
     --text-dark: #1f2937;
 
+    /* Colors - Semantic Status */
+    --status-success: #22c55e;
+    --status-success-light: #4ade80;
+    --status-error: #dc2626;
+    --status-error-light: #ef4444;
+    --status-warning: #f59e0b;
+    --status-info: var(--swirl-light);
+
+    /* Colors - External Brands */
+    --brand-spotify: #1DB954;
+    --brand-spotify-hover: #1ed760;
+
+    /* Colors - UI Elements */
+    --overlay-dark: rgba(15, 23, 42, 0.9);
+    --button-secondary-bg: rgba(107, 114, 128, 0.5);
+    --button-secondary-border: rgba(156, 163, 175, 0.3);
+
     /* Typography */
     --font-heading: 'Playfair Display', serif;
     --font-body: 'Inter', sans-serif;
@@ -165,6 +182,7 @@ header h1 {
     display: flex;
     gap: var(--space-sm);
     justify-content: center;
+    align-items: center;
     flex-wrap: wrap;
     position: relative;
     z-index: 1;
@@ -216,6 +234,76 @@ header h1 {
     color: var(--text-cream);
     font-size: 0.95em;
     font-weight: 500;
+}
+
+/* User Section with Spotify Status */
+.user-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+}
+
+.spotify-status {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.8em;
+    padding: 4px 10px;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: var(--radius-pill);
+    color: var(--text-muted);
+}
+
+.spotify-status-indicator {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--text-muted);
+    transition: background 0.3s ease;
+}
+
+.spotify-status-indicator.connected {
+    background: #1DB954;
+    box-shadow: 0 0 6px rgba(29, 185, 84, 0.6);
+}
+
+.spotify-status-indicator.disconnected {
+    background: #f87171;
+}
+
+.spotify-status-text {
+    white-space: nowrap;
+    max-width: 150px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.spotify-action-btn {
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    color: var(--text-cream);
+    padding: 2px 8px;
+    border-radius: var(--radius-pill);
+    font-size: 0.85em;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+}
+
+.spotify-action-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: var(--star-gold);
+    color: var(--star-gold);
+}
+
+.spotify-action-btn.connect {
+    border-color: #1DB954;
+    color: #1DB954;
+}
+
+.spotify-action-btn.connect:hover {
+    background: rgba(29, 185, 84, 0.2);
 }
 
 /* =================
@@ -292,7 +380,7 @@ main {
     background: rgba(30, 41, 59, 0.5);
     border-radius: var(--radius-md);
     overflow: hidden;
-    border: 1px solid rgba(59, 130, 246, 0.2);
+    border: 1px solid rgba(59, 130, 246, 0.4);
     transition: all 0.3s ease;
 }
 
@@ -381,7 +469,7 @@ main {
     padding: var(--space-sm) var(--space-lg);
     background: rgba(59, 130, 246, 0.2);
     color: var(--text-cream);
-    border: 2px solid rgba(96, 165, 250, 0.3);
+    border: 2px solid rgba(96, 165, 250, 0.5);
     border-radius: var(--radius-pill);
     font-size: 1em;
     font-weight: 500;
@@ -426,7 +514,7 @@ main {
     padding: var(--space-sm) var(--space-md);
     background: rgba(59, 130, 246, 0.2);
     color: var(--text-cream);
-    border: 2px solid rgba(96, 165, 250, 0.3);
+    border: 2px solid rgba(96, 165, 250, 0.5);
     border-radius: var(--radius-pill);
     font-size: 0.95em;
     font-weight: 500;
@@ -477,7 +565,7 @@ main {
     width: 100%;
     padding: var(--space-md);
     background: rgba(30, 41, 59, 0.6);
-    border: 2px solid rgba(59, 130, 246, 0.3);
+    border: 2px solid rgba(59, 130, 246, 0.5);
     border-radius: var(--radius-md);
     color: var(--text-cream);
     font-family: var(--font-body);
@@ -601,7 +689,7 @@ main {
     width: 45px;
     height: 35px;
     background: rgba(59, 130, 246, 0.3);
-    border: 2px solid rgba(96, 165, 250, 0.3);
+    border: 2px solid rgba(96, 165, 250, 0.5);
     border-radius: var(--radius-sm);
     color: var(--text-cream);
     font-size: 1.1em;
@@ -622,9 +710,9 @@ main {
 }
 
 .toggle-btn.no {
-    background: #dc2626;
+    background: var(--status-error);
     color: white;
-    border-color: #dc2626;
+    border-color: var(--status-error);
 }
 
 /* Advanced Toggles */
@@ -1251,7 +1339,7 @@ main {
     align-items: center;
     gap: var(--space-sm);
     padding: var(--space-md) var(--space-lg);
-    background: #1DB954;
+    background: var(--brand-spotify);
     color: white;
     text-decoration: none;
     border-radius: var(--radius-pill);
@@ -1268,7 +1356,7 @@ main {
 }
 
 .btn-spotify:hover {
-    background: #1ed760;
+    background: var(--brand-spotify-hover);
     transform: translateY(-2px);
     box-shadow: 0 6px 20px rgba(29, 185, 84, 0.5);
 }
@@ -1354,8 +1442,8 @@ main {
 }
 
 .btn-feedback.thumbs-up:hover {
-    background: #10b981;
-    border-color: #10b981;
+    background: var(--status-success);
+    border-color: var(--status-success);
     color: white;
 }
 
@@ -1376,8 +1464,8 @@ main {
 }
 
 .btn-feedback.thumbs-down:hover {
-    background: #dc2626;
-    border-color: #dc2626;
+    background: var(--status-error);
+    border-color: var(--status-error);
     color: white;
 }
 
@@ -1418,7 +1506,7 @@ main {
     left: 0;
     width: 100%;
     height: 100%;
-    background: rgba(15, 23, 42, 0.9);
+    background: var(--overlay-dark);
     display: flex;
     justify-content: center;
     align-items: center;
@@ -1653,9 +1741,9 @@ main {
 }
 
 .btn-cancel {
-    background: rgba(107, 114, 128, 0.5);
+    background: var(--button-secondary-bg);
     color: var(--text-cream);
-    border: 2px solid rgba(156, 163, 175, 0.3);
+    border: 2px solid var(--button-secondary-border);
 }
 
 .btn-cancel:hover {
@@ -1783,7 +1871,7 @@ footer a:hover {
     height: 28px;
     border-radius: 50%;
     background: rgba(220, 38, 38, 0.3);
-    color: #dc2626;
+    color: var(--status-error);
     border: none;
     font-size: 1.4em;
     cursor: pointer;
@@ -1802,7 +1890,7 @@ footer a:hover {
 }
 
 .delete-user-btn:hover {
-    background: #dc2626;
+    background: var(--status-error);
     color: white;
 }
 
@@ -1815,7 +1903,7 @@ footer a:hover {
     left: 0;
     width: 100%;
     height: 100%;
-    background: rgba(15, 23, 42, 0.9);
+    background: var(--overlay-dark);
     display: flex;
     justify-content: center;
     align-items: center;
@@ -1906,11 +1994,309 @@ footer a:hover {
     margin-top: var(--space-xl);
 }
 
+/* =================
+   PIN MODAL STYLES
+   ================= */
+.pin-modal-content {
+    max-width: 350px;
+    text-align: center;
+}
+
+.pin-modal-content h3 {
+    margin-bottom: var(--space-lg);
+}
+
+.pin-intro {
+    color: var(--text-muted);
+    font-size: 0.95em;
+    margin-bottom: var(--space-lg);
+}
+
+.pin-input-group {
+    margin-bottom: var(--space-md);
+}
+
+.pin-input-group label {
+    display: block;
+    font-weight: 500;
+    margin-bottom: var(--space-sm);
+    color: var(--text-light);
+    text-align: left;
+}
+
+.pin-input-group input {
+    width: 100%;
+    padding: var(--space-lg);
+    font-size: 2em;
+    font-weight: 600;
+    letter-spacing: 0.5em;
+    text-align: center;
+    background: rgba(30, 41, 59, 0.6);
+    border: 2px solid rgba(59, 130, 246, 0.5);
+    border-radius: var(--radius-md);
+    color: var(--text-cream);
+    font-family: var(--font-body);
+    transition: all 0.3s ease;
+}
+
+.pin-input-group input::placeholder {
+    letter-spacing: 0.3em;
+    color: var(--text-muted);
+    opacity: 0.5;
+}
+
+.pin-input-group input:focus {
+    outline: none;
+    border-color: var(--star-gold);
+    box-shadow: 0 0 20px rgba(251, 191, 36, 0.3);
+}
+
+.pin-error {
+    color: var(--status-error-light);
+    font-size: 0.9em;
+    margin-bottom: var(--space-md);
+    padding: var(--space-sm) var(--space-md);
+    background: rgba(220, 38, 38, 0.15);
+    border-radius: var(--radius-sm);
+}
+
+/* Shake animation for wrong PIN */
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+    20%, 40%, 60%, 80% { transform: translateX(5px); }
+}
+
+.shake {
+    animation: shake 0.5s ease-in-out;
+}
+
+/* No PIN badge */
+.no-pin-badge {
+    position: absolute;
+    bottom: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 0.7em;
+    color: var(--star-gold);
+    background: rgba(251, 191, 36, 0.2);
+    padding: 2px 8px;
+    border-radius: var(--radius-pill);
+    white-space: nowrap;
+}
+
+/* =================
+   MULTI-STEP MODAL
+   ================= */
+.add-user-modal-content {
+    max-width: 450px;
+}
+
+.modal-step {
+    /* Animation for step transitions */
+}
+
+.step-indicator {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-sm);
+    margin-bottom: var(--space-xl);
+}
+
+.step-indicator .step {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: rgba(59, 130, 246, 0.3);
+    border: 2px solid rgba(96, 165, 250, 0.5);
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 0.9em;
+    transition: all 0.3s ease;
+}
+
+.step-indicator .step.active {
+    background: var(--star-gold);
+    border-color: var(--star-gold);
+    color: var(--text-dark);
+    box-shadow: var(--shadow-glow);
+}
+
+.step-indicator .step.completed {
+    background: var(--status-success);
+    border-color: var(--status-success);
+    color: white;
+}
+
+.step-indicator .step-line {
+    width: 40px;
+    height: 2px;
+    background: rgba(96, 165, 250, 0.3);
+    transition: background 0.3s ease;
+}
+
+.step-indicator .step-line.completed {
+    background: var(--status-success);
+}
+
+/* Spotify connect section in Step 2 */
+.spotify-connect-section {
+    text-align: center;
+    padding: var(--space-lg) 0;
+}
+
+.spotify-icon {
+    margin-bottom: var(--space-lg);
+}
+
+.spotify-connect-text {
+    color: var(--text-cream);
+    margin-bottom: var(--space-xl);
+    font-size: 0.95em;
+    line-height: 1.5;
+}
+
+.btn-spotify-connect {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-sm);
+    padding: var(--space-md) var(--space-xl);
+    background: var(--brand-spotify);
+    color: white;
+    border: none;
+    border-radius: var(--radius-pill);
+    font-weight: 600;
+    font-size: 1.1em;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(29, 185, 84, 0.3);
+}
+
+.btn-spotify-connect:hover {
+    background: var(--brand-spotify-hover);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 25px rgba(29, 185, 84, 0.5);
+}
+
+.skip-section {
+    margin-top: var(--space-xl);
+    padding-top: var(--space-lg);
+    border-top: 1px solid rgba(96, 165, 250, 0.2);
+}
+
+.skip-label {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-sm);
+    cursor: pointer;
+    color: var(--text-muted);
+    font-size: 0.95em;
+    margin-bottom: var(--space-sm);
+}
+
+.skip-label input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    accent-color: var(--star-gold);
+    cursor: pointer;
+}
+
+.skip-warning {
+    font-size: 0.85em;
+    color: var(--text-muted);
+    font-style: italic;
+    max-width: 300px;
+    margin: 0 auto;
+    line-height: 1.4;
+}
+
+/* =================
+   LOCK BUTTON
+   ================= */
+.user-profile-row {
+    display: flex;
+    align-items: center;
+    gap: var(--space-xs);
+}
+
+.lock-btn {
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(59, 130, 246, 0.2);
+    border: 1px solid rgba(96, 165, 250, 0.3);
+    border-radius: 50%;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.lock-btn:hover {
+    background: rgba(251, 191, 36, 0.2);
+    border-color: var(--star-gold);
+    color: var(--star-gold);
+}
+
+.lock-btn svg {
+    width: 16px;
+    height: 16px;
+}
+
+/* =================
+   SECURITY SECTION (Settings)
+   ================= */
+.security-section .security-actions {
+    margin-top: var(--space-lg);
+}
+
+.btn-change-pin {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-sm);
+    padding: var(--space-md) var(--space-xl);
+    background: rgba(59, 130, 246, 0.2);
+    border: 1px solid rgba(96, 165, 250, 0.4);
+    border-radius: var(--radius-md);
+    color: var(--text-light);
+    font-weight: 500;
+    font-size: 0.95em;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.btn-change-pin:hover {
+    background: rgba(59, 130, 246, 0.3);
+    border-color: var(--star-gold);
+    color: var(--star-gold);
+}
+
+.btn-change-pin svg {
+    width: 18px;
+    height: 18px;
+}
+
+/* PIN success message */
+.pin-success {
+    color: var(--status-success-light);
+    font-size: 0.9em;
+    margin-bottom: var(--space-md);
+    padding: var(--space-sm) var(--space-md);
+    background: rgba(34, 197, 94, 0.15);
+    border-radius: var(--radius-sm);
+}
+
 .btn-secondary {
     padding: var(--space-md) var(--space-lg);
-    background: rgba(107, 114, 128, 0.5);
+    background: var(--button-secondary-bg);
     color: var(--text-cream);
-    border: 2px solid rgba(156, 163, 175, 0.3);
+    border: 2px solid var(--button-secondary-border);
     border-radius: var(--radius-pill);
     font-size: 1em;
     font-weight: 600;
@@ -1925,7 +2311,7 @@ footer a:hover {
 
 .btn-danger {
     padding: var(--space-md) var(--space-lg);
-    background: #dc2626;
+    background: var(--status-error);
     color: white;
     border: none;
     border-radius: var(--radius-pill);
@@ -1937,7 +2323,7 @@ footer a:hover {
 }
 
 .btn-danger:hover {
-    background: #ef4444;
+    background: var(--status-error-light);
 }
 
 /* =================
@@ -2085,7 +2471,7 @@ footer a:hover {
 }
 
 .swipe-added {
-    color: #4ade80;
+    color: var(--status-success-light);
     font-size: 0.9em;
     font-weight: 600;
     opacity: 0;
@@ -2153,7 +2539,7 @@ footer a:hover {
 
 /* Right hint - Add to playlist */
 .hint-right {
-    color: #4ade80;
+    color: var(--status-success-light);
     border-color: rgba(74, 222, 128, 0.3);
 }
 
@@ -2454,7 +2840,7 @@ button.swipe-hint:active {
 }
 
 .submenu-dislike:hover {
-    border-color: #ef4444;
+    border-color: var(--status-error-light);
     background: rgba(239, 68, 68, 0.2);
     color: #fca5a5;
 }

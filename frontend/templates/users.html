@@ -21,33 +21,121 @@
                 <!-- User cards will be loaded here -->
             </div>
 
-            <!-- Add User Modal -->
+            <!-- PIN Entry Modal -->
+            <div id="pin-modal" class="modal hidden">
+                <div class="modal-content pin-modal-content">
+                    <h3>Enter PIN for <span id="pin-user-name"></span></h3>
+                    <div class="pin-input-group">
+                        <input type="password" id="pin-input" maxlength="4" pattern="\d{4}" inputmode="numeric" placeholder="****" autocomplete="off">
+                    </div>
+                    <p class="pin-error hidden" id="pin-error">Incorrect PIN. Try again.</p>
+                    <div class="modal-buttons">
+                        <button type="button" id="cancel-pin" class="btn-secondary">Cancel</button>
+                        <button type="button" id="submit-pin" class="btn-submit">Enter</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Set PIN Modal (for existing users without PIN) -->
+            <div id="set-pin-modal" class="modal hidden">
+                <div class="modal-content pin-modal-content">
+                    <h3>Set up PIN for <span id="set-pin-user-name"></span></h3>
+                    <p class="pin-intro">Create a 4-digit PIN to secure your profile.</p>
+                    <div class="pin-input-group">
+                        <label for="new-pin-input">PIN</label>
+                        <input type="password" id="new-pin-input" maxlength="4" pattern="\d{4}" inputmode="numeric" placeholder="****" autocomplete="off">
+                    </div>
+                    <div class="pin-input-group">
+                        <label for="confirm-pin-input">Confirm PIN</label>
+                        <input type="password" id="confirm-pin-input" maxlength="4" pattern="\d{4}" inputmode="numeric" placeholder="****" autocomplete="off">
+                    </div>
+                    <p class="pin-error hidden" id="set-pin-error">PINs do not match.</p>
+                    <div class="modal-buttons">
+                        <button type="button" id="cancel-set-pin" class="btn-secondary">Cancel</button>
+                        <button type="button" id="submit-set-pin" class="btn-submit">Set PIN</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Add User Modal - Multi-Step -->
             <div id="add-user-modal" class="modal hidden">
-                <div class="modal-content">
-                    <h3>Create New Profile</h3>
-                    <form id="add-user-form">
-                        <div class="form-group">
-                            <label for="new-user-name">Name</label>
-                            <input type="text" id="new-user-name" placeholder="Enter name" required>
+                <div class="modal-content add-user-modal-content">
+                    <!-- Step 1: Profile Info -->
+                    <div id="add-user-step-1" class="modal-step">
+                        <h3>Create New Profile</h3>
+                        <div class="step-indicator">
+                            <span class="step active">1</span>
+                            <span class="step-line"></span>
+                            <span class="step">2</span>
                         </div>
-                        <div class="form-group">
-                            <label>Choose a color</label>
-                            <div class="color-picker">
-                                <button type="button" class="color-btn selected" data-color="#2980b9" style="background: #2980b9;"></button>
-                                <button type="button" class="color-btn" data-color="#27ae60" style="background: #27ae60;"></button>
-                                <button type="button" class="color-btn" data-color="#e74c3c" style="background: #e74c3c;"></button>
-                                <button type="button" class="color-btn" data-color="#9b59b6" style="background: #9b59b6;"></button>
-                                <button type="button" class="color-btn" data-color="#f39c12" style="background: #f39c12;"></button>
-                                <button type="button" class="color-btn" data-color="#1abc9c" style="background: #1abc9c;"></button>
-                                <button type="button" class="color-btn" data-color="#e91e63" style="background: #e91e63;"></button>
-                                <button type="button" class="color-btn" data-color="#607d8b" style="background: #607d8b;"></button>
+                        <form id="add-user-form-step1">
+                            <div class="form-group">
+                                <label for="new-user-name">Name</label>
+                                <input type="text" id="new-user-name" placeholder="Enter name" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Choose a color</label>
+                                <div class="color-picker">
+                                    <button type="button" class="color-btn selected" data-color="#2980b9" style="background: #2980b9;"></button>
+                                    <button type="button" class="color-btn" data-color="#27ae60" style="background: #27ae60;"></button>
+                                    <button type="button" class="color-btn" data-color="#e74c3c" style="background: #e74c3c;"></button>
+                                    <button type="button" class="color-btn" data-color="#9b59b6" style="background: #9b59b6;"></button>
+                                    <button type="button" class="color-btn" data-color="#f39c12" style="background: #f39c12;"></button>
+                                    <button type="button" class="color-btn" data-color="#1abc9c" style="background: #1abc9c;"></button>
+                                    <button type="button" class="color-btn" data-color="#e91e63" style="background: #e91e63;"></button>
+                                    <button type="button" class="color-btn" data-color="#607d8b" style="background: #607d8b;"></button>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="create-pin-input">Create a 4-digit PIN</label>
+                                <input type="password" id="create-pin-input" maxlength="4" pattern="\d{4}" inputmode="numeric" placeholder="****" required autocomplete="off">
+                            </div>
+                            <div class="form-group">
+                                <label for="create-pin-confirm">Confirm PIN</label>
+                                <input type="password" id="create-pin-confirm" maxlength="4" pattern="\d{4}" inputmode="numeric" placeholder="****" required autocomplete="off">
+                            </div>
+                            <p class="pin-error hidden" id="create-pin-error">PINs do not match.</p>
+                            <div class="modal-buttons">
+                                <button type="button" id="cancel-add-user" class="btn-secondary">Cancel</button>
+                                <button type="submit" class="btn-submit">Next</button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- Step 2: Connect Spotify -->
+                    <div id="add-user-step-2" class="modal-step hidden">
+                        <h3>Connect Spotify</h3>
+                        <div class="step-indicator">
+                            <span class="step completed">1</span>
+                            <span class="step-line completed"></span>
+                            <span class="step active">2</span>
+                        </div>
+                        <div class="spotify-connect-section">
+                            <div class="spotify-icon">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="#1DB954">
+                                    <path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z"/>
+                                </svg>
+                            </div>
+                            <p class="spotify-connect-text">Connect your Spotify account to get personalized recommendations based on your listening history.</p>
+                            <button type="button" id="connect-spotify-btn" class="btn-spotify-connect">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                                    <path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z"/>
+                                </svg>
+                                Connect Spotify
+                            </button>
+                            <div class="skip-section">
+                                <label class="skip-label">
+                                    <input type="checkbox" id="skip-spotify-checkbox">
+                                    <span>Skip for now</span>
+                                </label>
+                                <p class="skip-warning">You'll miss personalized recommendations based on your listening history. You can always connect later in Settings.</p>
                             </div>
                         </div>
                         <div class="modal-buttons">
-                            <button type="button" id="cancel-add-user" class="btn-secondary">Cancel</button>
-                            <button type="submit" class="btn-submit">Create</button>
+                            <button type="button" id="back-to-step1" class="btn-secondary">Back</button>
+                            <button type="button" id="finish-create-user" class="btn-submit" disabled>Finish</button>
                         </div>
-                    </form>
+                    </div>
                 </div>
             </div>
 

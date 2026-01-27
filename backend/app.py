@@ -1,4 +1,5 @@
 from flask import Flask, render_template, request, jsonify, redirect, session
+from functools import wraps
 import os
 import sys
 
@@ -12,10 +13,11 @@ from database import (
     get_all_rated_bands, save_playlist, link_playlist_to_suggestions,
     get_all_playlists, get_playlist_with_details, update_playlist_track_count,
     get_bands_in_playlists, migrate_add_user_support, migrate_add_spotify_support,
-    migrate_add_user_source_preferences,
+    migrate_add_user_source_preferences, migrate_add_pin_support,
     ensure_default_user, create_user, get_all_users, get_user_by_id, delete_user,
     get_user_count, save_spotify_auth, get_spotify_auth, update_spotify_token,
-    clear_spotify_auth, save_taste_data, get_taste_data, get_taste_sync_status
+    clear_spotify_auth, save_taste_data, get_taste_data, get_taste_sync_status,
+    verify_user_pin, set_user_pin, user_has_pin, get_user_by_spotify_id
 )
 from api_handler import get_music_recommendations
 from spotify_handler import (
@@ -39,13 +41,41 @@ with app.app_context():
     migrate_add_user_support()
     migrate_add_spotify_support()
     migrate_add_user_source_preferences()
+    migrate_add_pin_support()
     ensure_default_user()
 
+
 def get_current_user_id():
-    """Get the current user ID from session, defaulting to 1."""
-    return session.get('current_user_id', 1)
+    """Get the current user ID from session. Returns None if not authenticated."""
+    if not session.get('authenticated'):
+        return None
+    return session.get('current_user_id')
+
+
+def is_authenticated():
+    """Check if user is authenticated."""
+    return session.get('authenticated', False) and session.get('current_user_id') is not None
+
+
+def require_auth(f):
+    """Decorator to require authentication for routes."""
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not is_authenticated():
+            # For API routes, return JSON error
+            if request.path.startswith('/api/'):
+                return jsonify({
+                    'success': False,
+                    'error': 'Authentication required',
+                    'redirect': '/users'
+                }), 401
+            # For page routes, redirect to user selection
+            return redirect('/users')
+        return f(*args, **kwargs)
+    return decorated_function
 
 @app.route('/')
+@require_auth
 def index():
     """Render the main page."""
     return render_template('index.html')
@@ -75,11 +105,12 @@ def list_users():
 
 @app.route('/api/users', methods=['POST'])
 def add_user():
-    """Create a new user profile."""
+    """Create a new user profile with PIN."""
     try:
         data = request.json
         name = data.get('name', '').strip()
         avatar_color = data.get('avatar_color', '#2980b9')
+        pin = data.get('pin', '').strip()
 
         if not name:
             return jsonify({
@@ -87,13 +118,23 @@ def add_user():
                 'error': 'Name is required'
             }), 400
 
-        user_id = create_user(name, avatar_color)
+        if not pin or len(pin) != 4 or not pin.isdigit():
+            return jsonify({
+                'success': False,
+                'error': 'A 4-digit PIN is required'
+            }), 400
+
+        user_id = create_user(name, avatar_color, pin)
 
         if user_id is None:
             return jsonify({
                 'success': False,
                 'error': 'A user with that name already exists'
             }), 400
+
+        # Log in the new user automatically
+        session['current_user_id'] = user_id
+        session['authenticated'] = True
 
         return jsonify({
             'success': True,
@@ -142,19 +183,30 @@ def remove_user(user_id):
 def current_user():
     """Get the currently active user."""
     try:
+        if not is_authenticated():
+            return jsonify({
+                'success': True,
+                'user': None,
+                'authenticated': False
+            })
+
         user_id = get_current_user_id()
         user = get_user_by_id(user_id)
 
         if not user:
-            # Fallback to first user if current doesn't exist
-            users = get_all_users()
-            if users:
-                user = users[0]
-                session['current_user_id'] = user['id']
+            # User no longer exists - clear auth
+            session.pop('authenticated', None)
+            session.pop('current_user_id', None)
+            return jsonify({
+                'success': True,
+                'user': None,
+                'authenticated': False
+            })
 
         return jsonify({
             'success': True,
-            'user': user
+            'user': user,
+            'authenticated': True
         })
     except Exception as e:
         print(f"Error in GET /api/users/current: {str(e)}")
@@ -163,9 +215,181 @@ def current_user():
             'error': str(e)
         }), 500
 
+@app.route('/api/users/auth', methods=['POST'])
+def auth_user():
+    """Authenticate a user with their PIN."""
+    try:
+        data = request.json
+        user_id = data.get('user_id')
+        pin = data.get('pin', '').strip()
+
+        if not user_id:
+            return jsonify({
+                'success': False,
+                'error': 'User ID is required'
+            }), 400
+
+        if not pin:
+            return jsonify({
+                'success': False,
+                'error': 'PIN is required'
+            }), 400
+
+        user = get_user_by_id(user_id)
+        if not user:
+            return jsonify({
+                'success': False,
+                'error': 'User not found'
+            }), 404
+
+        # Verify PIN
+        if not verify_user_pin(user_id, pin):
+            return jsonify({
+                'success': False,
+                'error': 'Incorrect PIN'
+            }), 401
+
+        # Clear any session-level Spotify state from previous user
+        session.pop('spotify_token', None)
+
+        # Set session
+        session['current_user_id'] = user_id
+        session['authenticated'] = True
+
+        # Check if user has Spotify connected
+        auth_data = get_spotify_auth(user_id)
+        spotify_connected = auth_data is not None and auth_data.get('spotify_user_id') is not None
+
+        return jsonify({
+            'success': True,
+            'user': user,
+            'message': f'Welcome back, {user["name"]}!',
+            'spotify_connected': spotify_connected
+        })
+    except Exception as e:
+        print(f"Error in POST /api/users/auth: {str(e)}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+
+@app.route('/api/users/lock', methods=['POST'])
+def lock_user():
+    """Lock the current session and return to profile picker."""
+    try:
+        # Clear authentication
+        session.pop('authenticated', None)
+        session.pop('current_user_id', None)
+        session.pop('spotify_token', None)
+
+        return jsonify({
+            'success': True,
+            'message': 'Session locked',
+            'redirect': '/users'
+        })
+    except Exception as e:
+        print(f"Error in POST /api/users/lock: {str(e)}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+
+@app.route('/api/users/<int:user_id>/set-pin', methods=['POST'])
+def set_pin(user_id):
+    """Set PIN for a user without one (existing users migration)."""
+    try:
+        data = request.json
+        pin = data.get('pin', '').strip()
+
+        if not pin or len(pin) != 4 or not pin.isdigit():
+            return jsonify({
+                'success': False,
+                'error': 'A 4-digit PIN is required'
+            }), 400
+
+        user = get_user_by_id(user_id)
+        if not user:
+            return jsonify({
+                'success': False,
+                'error': 'User not found'
+            }), 404
+
+        # Check if user already has a PIN
+        if user_has_pin(user_id):
+            return jsonify({
+                'success': False,
+                'error': 'User already has a PIN set'
+            }), 400
+
+        # Set the PIN
+        set_user_pin(user_id, pin)
+
+        # Log them in
+        session['current_user_id'] = user_id
+        session['authenticated'] = True
+
+        return jsonify({
+            'success': True,
+            'message': 'PIN set successfully!'
+        })
+    except Exception as e:
+        print(f"Error in POST /api/users/{user_id}/set-pin: {str(e)}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+
+@app.route('/api/users/change-pin', methods=['POST'])
+@require_auth
+def change_pin():
+    """Change PIN for the currently authenticated user."""
+    try:
+        data = request.json
+        current_pin = data.get('current_pin', '').strip()
+        new_pin = data.get('new_pin', '').strip()
+
+        if not current_pin or not new_pin:
+            return jsonify({
+                'success': False,
+                'error': 'Current PIN and new PIN are required'
+            }), 400
+
+        if len(new_pin) != 4 or not new_pin.isdigit():
+            return jsonify({
+                'success': False,
+                'error': 'New PIN must be 4 digits'
+            }), 400
+
+        user_id = get_current_user_id()
+
+        # Verify current PIN
+        if not verify_user_pin(user_id, current_pin):
+            return jsonify({
+                'success': False,
+                'error': 'Current PIN is incorrect'
+            }), 401
+
+        # Set new PIN
+        set_user_pin(user_id, new_pin)
+
+        return jsonify({
+            'success': True,
+            'message': 'PIN changed successfully!'
+        })
+    except Exception as e:
+        print(f"Error in POST /api/users/change-pin: {str(e)}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+
 @app.route('/api/users/switch', methods=['POST'])
 def switch_user():
-    """Switch to a different user profile."""
+    """Switch to a different user profile (deprecated - use /api/users/auth instead)."""
     try:
         data = request.json
         user_id = data.get('user_id')
@@ -206,6 +430,7 @@ def switch_user():
         }), 500
 
 @app.route('/api/recommend', methods=['POST'])
+@require_auth
 def recommend():
     """Get music recommendations based on user preferences."""
     try:
@@ -319,6 +544,7 @@ def recommend():
         }), 500
 
 @app.route('/api/feedback', methods=['POST'])
+@require_auth
 def feedback():
     """Save user feedback on a suggestion."""
     try:
@@ -348,6 +574,7 @@ def feedback():
         }), 500
 
 @app.route('/api/sources', methods=['GET'])
+@require_auth
 def sources():
     """Get all available music sources for current user."""
     try:
@@ -365,16 +592,19 @@ def sources():
         }), 500
 
 @app.route('/discover')
+@require_auth
 def discover_page():
     """Render the swipe discovery page."""
     return render_template('discover.html')
 
 @app.route('/history')
+@require_auth
 def history_page():
     """Render the history page."""
     return render_template('history.html')
 
 @app.route('/api/history', methods=['GET'])
+@require_auth
 def get_history():
     """Get user's feedback history."""
     try:
@@ -444,11 +674,13 @@ def get_history_demo():
     return jsonify({'success': True, 'history': demo_history})
 
 @app.route('/profile')
+@require_auth
 def profile_page():
     """Render the profile/settings page."""
     return render_template('profile.html')
 
 @app.route('/api/sources/all', methods=['GET'])
+@require_auth
 def get_sources():
     """Get all music sources with their enabled status for current user."""
     try:
@@ -466,6 +698,7 @@ def get_sources():
         }), 500
 
 @app.route('/api/sources/update', methods=['POST'])
+@require_auth
 def update_sources():
     """Update source enabled/disabled status for current user."""
     try:
@@ -494,6 +727,7 @@ def update_sources():
         }), 500
 
 @app.route('/api/sources/add', methods=['POST'])
+@require_auth
 def add_source():
     """Add a new custom music source."""
     try:
@@ -530,6 +764,7 @@ def add_source():
         }), 500
 
 @app.route('/api/sources/delete', methods=['POST'])
+@require_auth
 def delete_source_route():
     """Delete a custom music source."""
     try:
@@ -558,6 +793,7 @@ def delete_source_route():
 # Spotify Integration Routes
 
 @app.route('/api/spotify/login')
+@require_auth
 def spotify_login():
     """Initiate Spotify OAuth flow."""
     try:
@@ -567,7 +803,9 @@ def spotify_login():
 
         # IMPORTANT: Store which user initiated the OAuth flow
         # This ensures tokens are saved to the correct user even if session changes
-        session['spotify_oauth_user_id'] = get_current_user_id()
+        current_user = get_current_user_id()
+        session['spotify_oauth_user_id'] = current_user
+        print(f"[Spotify OAuth] Initiating for user_id={current_user}, authenticated={session.get('authenticated')}", flush=True)
 
         # Force show_dialog=True so Spotify always shows login screen
         # This allows different users to connect their own Spotify accounts
@@ -595,6 +833,7 @@ def spotify_callback():
         # Get the user who initiated the OAuth (not current session user)
         oauth_user_id = session.get('spotify_oauth_user_id')
         redirect_page = session.get('spotify_oauth_return_page', '/')
+        print(f"[Spotify OAuth] Callback received: oauth_user_id={oauth_user_id}, current_user_id={session.get('current_user_id')}", flush=True)
 
         # Clean up OAuth session data
         session.pop('spotify_oauth_return_page', None)
@@ -610,25 +849,47 @@ def spotify_callback():
 
         # Validate we know which user to save tokens for
         if not oauth_user_id:
-            print("Warning: No oauth_user_id in session, using current user")
-            oauth_user_id = get_current_user_id()
+            print("Warning: No oauth_user_id in session, trying current user")
+            oauth_user_id = session.get('current_user_id')  # Use raw session, not get_current_user_id which checks auth
+            if not oauth_user_id:
+                print("Error: Cannot determine which user to save Spotify tokens for")
+                return redirect(f'{redirect_page}?spotify=error&reason=no_user')
 
+        print(f"[Spotify OAuth] Exchanging code for token...", flush=True)
         token_info = sp_oauth.get_access_token(code)
+        print(f"[Spotify OAuth] Token received, access_token starts with: {token_info.get('access_token', 'NONE')[:20]}...", flush=True)
 
         # Get Spotify user info
         import spotipy
         sp = spotipy.Spotify(auth=token_info['access_token'])
         spotify_user = sp.me()
+        print(f"[Spotify OAuth] Raw Spotify user response: id={spotify_user.get('id')}, display_name={spotify_user.get('display_name')}, email={spotify_user.get('email', 'N/A')}", flush=True)
+
         spotify_user_info = {
             'id': spotify_user['id'],
             'display_name': spotify_user.get('display_name', spotify_user['id'])
         }
 
-        # Save to database for the user who initiated OAuth
-        save_spotify_auth(oauth_user_id, token_info, spotify_user_info)
+        print(f"[Spotify OAuth] Received auth for Spotify user: {spotify_user_info['id']} ({spotify_user_info['display_name']})", flush=True)
 
-        # Make sure the session reflects the correct current user
+        # Check if this Spotify account is already connected to a DIFFERENT user
+        existing_user = get_user_by_spotify_id(spotify_user_info['id'])
+        if existing_user and existing_user['id'] != oauth_user_id:
+            print(f"[Spotify OAuth] ERROR: Spotify account {spotify_user_info['id']} already connected to user {existing_user['id']} ({existing_user['name']})", flush=True)
+            # Restore session for the user who tried to connect
+            session['current_user_id'] = oauth_user_id
+            session['authenticated'] = True
+            return redirect(f'{redirect_page}?spotify=already_connected&existing_user={existing_user["name"]}')
+
+        # Save to database for the user who initiated OAuth
+        print(f"[Spotify OAuth] Saving tokens for user_id={oauth_user_id}, spotify_user={spotify_user_info['id']}", flush=True)
+        save_spotify_auth(oauth_user_id, token_info, spotify_user_info)
+        print(f"[Spotify OAuth] save_spotify_auth completed", flush=True)
+
+        # Make sure the session reflects the correct current user AND is authenticated
         session['current_user_id'] = oauth_user_id
+        session['authenticated'] = True
+        print(f"[Spotify OAuth] Session set: user_id={oauth_user_id}, authenticated=True", flush=True)
 
         return redirect(f'{redirect_page}?spotify=connected')
     except Exception as e:
@@ -638,6 +899,7 @@ def spotify_callback():
         return redirect(f'{redirect_page}?spotify=error')
 
 @app.route('/api/spotify/status')
+@require_auth
 def spotify_status():
     """Check if current DailyJams user is connected to Spotify."""
     try:
@@ -659,19 +921,9 @@ def spotify_status():
                 'last_sync': sync_status
             })
 
-        # Fallback: check legacy file-based auth
-        sp = get_spotify_client()
-        if sp:
-            user = get_current_user(sp)
-            if user:
-                return jsonify({
-                    'success': True,
-                    'authenticated': True,
-                    'connected': False,  # Has legacy auth but not per-user
-                    'user': user,
-                    'message': 'Connected via legacy auth. Re-connect to link to your profile.'
-                })
-
+        # No per-user Spotify connection found
+        # Note: We removed the legacy file-based fallback because it was
+        # incorrectly showing another user's Spotify account
         return jsonify({
             'success': True,
             'authenticated': False,
@@ -685,6 +937,7 @@ def spotify_status():
         }), 500
 
 @app.route('/api/spotify/disconnect', methods=['POST'])
+@require_auth
 def spotify_disconnect():
     """Disconnect current user's Spotify account."""
     try:
@@ -704,6 +957,7 @@ def spotify_disconnect():
 
 
 @app.route('/api/spotify/sync', methods=['POST'])
+@require_auth
 def spotify_sync_taste():
     """Sync current user's Spotify taste data (top artists, followed artists, saved tracks)."""
     try:
@@ -741,6 +995,7 @@ def spotify_sync_taste():
 
 
 @app.route('/api/spotify/taste', methods=['GET'])
+@require_auth
 def get_spotify_taste():
     """Get current user's synced Spotify taste data."""
     try:
@@ -826,6 +1081,7 @@ def test_preview_urls():
         }), 500
 
 @app.route('/api/spotify/tracks', methods=['POST'])
+@require_auth
 def get_tracks():
     """Get top tracks for selected artists."""
     try:
@@ -872,6 +1128,7 @@ def get_tracks():
         }), 500
 
 @app.route('/api/spotify/create-playlist', methods=['POST'])
+@require_auth
 def create_spotify_playlist():
     """Create a new Spotify playlist or add to existing one."""
     try:
@@ -997,6 +1254,7 @@ def create_spotify_playlist():
         }), 500
 
 @app.route('/api/playlists', methods=['GET'])
+@require_auth
 def get_playlists():
     """Get all user's DailyJams playlists."""
     try:
@@ -1036,6 +1294,7 @@ def get_playlist_details(playlist_id):
         }), 500
 
 @app.route('/api/spotify/user-playlists', methods=['GET'])
+@require_auth
 def get_spotify_playlists():
     """Get user's playlists from Spotify (for selecting existing playlists to add to)."""
     try:
